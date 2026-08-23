@@ -1,6 +1,6 @@
 # 🚀 Backend Service - NetPay Manager
 
-This repository contains the business logic, REST API endpoints, and database versioning for the **[Your Project Name]** application. 
+This repository contains the business logic, REST API endpoints, and database versioning for the **NetPay Manager** application. 
 
 Built using **Spring Boot**, it follows modern software development best practices, featuring a clean, decoupled architecture ready to serve the frontend client.
 
