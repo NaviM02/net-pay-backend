@@ -1,10 +1,10 @@
-package com.navi.netpay_backend;
+package com.navi.net_pay_backend;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
 @SpringBootTest
-class NetpayBackendApplicationTests {
+class NetPayBackendApplicationTests {
 
 	@Test
 	void contextLoads() {

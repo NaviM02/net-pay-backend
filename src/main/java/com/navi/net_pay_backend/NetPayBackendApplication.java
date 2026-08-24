@@ -1,13 +1,13 @@
-package com.navi.netpay_backend;
+package com.navi.net_pay_backend;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 
 @SpringBootApplication
-public class NetpayBackendApplication {
+public class NetPayBackendApplication {
 
 	public static void main(String[] args) {
-		SpringApplication.run(NetpayBackendApplication.class, args);
+		SpringApplication.run(NetPayBackendApplication.class, args);
 	}
 
 }
