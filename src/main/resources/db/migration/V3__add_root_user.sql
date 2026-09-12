@@ -1,0 +1,2 @@
+INSERT INTO app_user (hash_id, full_name, email, password_hash, role_id, status_id, last_login_at)
+VALUES ('usr_8f3b9a2c-7d1e-4b6a-9f8c-3e2d1a0b4c5d', 'Administrador Root', 'admin@netpay.com', '$2a$12$Kouxmhr.vP33NoXCfPuqNuxSrYeLOSvnwT5zdXgaHfRAfxrgVzTOy', 30061, 30049, NULL);
