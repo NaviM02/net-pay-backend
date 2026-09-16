@@ -13,12 +13,12 @@ import org.springframework.stereotype.Service;
 @RequiredArgsConstructor
 public class LoginUseCase {
 
-    private final AppUserRepository userAccountRepository;
+    private final AppUserRepository appUserRepository;
     private final PasswordHashService passwordHashService;
     private final TokenCredentialUseCase tokenCredentialUseCase;
 
     public String doLogin(LoginRequest request, String userAgent) {
-        AppUser user = userAccountRepository
+        AppUser user = appUserRepository
                 .findByEmailAndStatus(request.getEmail(), TypologyEnum.ACTIVE.getId())
                 .orElseThrow(() -> new InvalidCredentialsException("invalid_email"));
 
@@ -26,7 +26,7 @@ public class LoginUseCase {
             throw new InvalidCredentialsException("wrong_password");
         }
 
-        userAccountRepository.updateLastLogin(user.getId());
+        appUserRepository.updateLastLogin(user.getId());
 
         return tokenCredentialUseCase.create(user, request.getFingerprint(), userAgent);
     }

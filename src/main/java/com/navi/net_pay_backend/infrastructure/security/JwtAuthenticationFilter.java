@@ -1,4 +1,4 @@
-package com.navi.net_pay_backend.infrastructure.http.filter;
+package com.navi.net_pay_backend.infrastructure.security;
 
 import com.navi.net_pay_backend.application.use_case.TokenCredentialUseCase;
 import com.navi.net_pay_backend.domain.service.model.TokenPayload;
@@ -17,7 +17,7 @@ import java.util.Collections;
 
 @Component
 @RequiredArgsConstructor
-public class JwtAuthFilter extends OncePerRequestFilter {
+public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     private final TokenCredentialUseCase tokenCredentialUseCase;
 
@@ -25,24 +25,26 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         String authHeader = request.getHeader("Authorization");
 
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            filterChain.doFilter(request, response);
-            return;
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            String token = authHeader.substring(7);
+
+            try {
+                TokenPayload payload = tokenCredentialUseCase.verify(token);
+
+                if (payload != null && payload.getUserId() != null) {
+                    // Guardamos el userId como el "principal" (identidad primaria del hilo)
+                    UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(
+                            payload.getUserId(),
+                            null,
+                            Collections.emptyList()
+                    );
+
+                    SecurityContextHolder.getContext().setAuthentication(authentication);
+                }
+            } catch (Exception e) {
+                SecurityContextHolder.clearContext();
+            }
         }
-
-        String token = authHeader.substring(7);
-
-        TokenPayload payload = tokenCredentialUseCase.verify(token);
-
-        if (payload == null || payload.getUserId() == null) {
-            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-            response.setContentType("application/json");
-            response.getWriter().write("{\"message\":\"no_valid_token_provided\"}");
-            return;
-        }
-
-        UsernamePasswordAuthenticationToken authentication = new UsernamePasswordAuthenticationToken(payload.getUserId(), null, Collections.emptyList());
-        SecurityContextHolder.getContext().setAuthentication(authentication);
 
         filterChain.doFilter(request, response);
     }

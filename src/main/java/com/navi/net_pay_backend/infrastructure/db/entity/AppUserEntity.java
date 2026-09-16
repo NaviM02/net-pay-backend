@@ -30,12 +30,6 @@ public class AppUserEntity {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String passwordHash;
 
-    @Column(name = "role_id", nullable = false)
-    private Long roleId;
-
-    @Column(name = "status_id", nullable = false)
-    private Long statusId;
-
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 
@@ -47,4 +41,12 @@ public class AppUserEntity {
 
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tp_status", referencedColumnName = "typology_id")
+    private AdmTypologyEntity tpStatus;
+
+    @ManyToOne(fetch = FetchType.EAGER)
+    @JoinColumn(name = "tp_role", referencedColumnName = "typology_id")
+    private AdmTypologyEntity tpRole;
 }

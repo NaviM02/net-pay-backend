@@ -1,4 +1,4 @@
-package com.navi.net_pay_backend.domain.service;
+package com.navi.net_pay_backend.domain.service.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

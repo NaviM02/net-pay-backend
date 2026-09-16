@@ -4,11 +4,11 @@ import lombok.Getter;
 
 @Getter
 public enum TypologyEnum {
-    ACTIVE(30049L),
-    INACTIVE(30050L),
-    DELETED(30051L),
-    LOCKED(30052L),
-    SUSPENDED(30053L);
+    ACTIVE(49L),
+    INACTIVE(30L),
+    DELETED(51L),
+    LOCKED(52L),
+    SUSPENDED(53L);
 
     private final Long id;
 

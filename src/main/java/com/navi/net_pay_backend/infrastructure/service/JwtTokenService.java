@@ -1,6 +1,6 @@
 package com.navi.net_pay_backend.infrastructure.service;
 
-import com.navi.net_pay_backend.domain.service.TokenPayload;
+import com.navi.net_pay_backend.domain.service.model.TokenPayload;
 import com.navi.net_pay_backend.domain.service.TokenService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;

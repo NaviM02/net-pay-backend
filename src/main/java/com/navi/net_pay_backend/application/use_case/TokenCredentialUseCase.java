@@ -3,7 +3,7 @@ package com.navi.net_pay_backend.application.use_case;
 import com.navi.net_pay_backend.domain.entity.TokenCredential;
 import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.domain.repository.TokenCredentialRepository;
-import com.navi.net_pay_backend.domain.service.TokenPayload;
+import com.navi.net_pay_backend.domain.service.model.TokenPayload;
 import com.navi.net_pay_backend.domain.service.TokenService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
@@ -22,7 +22,7 @@ public class TokenCredentialUseCase {
     private long expiresIn;
 
     public String create(AppUser user, String fingerprint, String userAgent) {
-        String token = tokenService.generateToken(user.getEmail(), user.getId(), user.getRoleId());
+        String token = tokenService.generateToken(user.getEmail(), user.getId(), user.getTpRole().getInternalId());
         LocalDateTime effectiveDate = LocalDateTime.now();
         LocalDateTime expirationDate = effectiveDate.plusSeconds(expiresIn);
 

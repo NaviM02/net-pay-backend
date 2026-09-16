@@ -2,7 +2,7 @@ package com.navi.net_pay_backend.domain.entity;
 
 import lombok.*;
 
-@Getter @Setter
+@Getter @Setter @Builder
 @NoArgsConstructor @AllArgsConstructor
 public class AdmTypology {
     private Long typologyId;

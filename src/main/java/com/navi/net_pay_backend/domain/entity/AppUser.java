@@ -9,11 +9,11 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 public class AppUser {
     private Long id;
-    private String publicId;
+    private String hashId;
     private String fullName;
     private String email;
     private String passwordHash;
-    private Long roleId;
-    private Long statusId;
+    private AdmTypology tpRole;
+    private AdmTypology tpStatus;
     private LocalDateTime lastLoginAt;
 }
