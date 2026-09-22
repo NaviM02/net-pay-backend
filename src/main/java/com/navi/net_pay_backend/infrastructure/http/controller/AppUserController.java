@@ -2,6 +2,7 @@ package com.navi.net_pay_backend.infrastructure.http.controller;
 
 import com.navi.net_pay_backend.application.use_case.AppClientUseCase;
 import com.navi.net_pay_backend.application.use_case.AppUserUseCase;
+import com.navi.net_pay_backend.application.use_case.AuditLogUseCase;
 import com.navi.net_pay_backend.domain.dto.AppClientQueryDto;
 import com.navi.net_pay_backend.domain.dto.AppUserQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
@@ -9,6 +10,7 @@ import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.AuditLogResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,7 @@ public class AppUserController {
 
     private final AppUserUseCase userUseCase;
     private final AppClientUseCase clientUseCase;
+    private final AuditLogUseCase auditLogUseCase;
     private final HttpMapper httpMapper;
 
     @GetMapping("/me")
@@ -41,6 +44,14 @@ public class AppUserController {
                 .map(httpMapper::toAppClientResponse)
                 .toList();
         return ResponseEntity.ok().header("X-Total-Count", String.valueOf(result.getTotal())).body(clientRes);
+    }
+
+    @GetMapping("/{hashId}/audit-logs")
+    public ResponseEntity<List<AuditLogResponseDto>> findAuditLogs(@PathVariable String hashId) {
+        List<AuditLogResponseDto> response = auditLogUseCase.findByUserHashId(hashId).stream()
+                .map(httpMapper::toAuditLogResponse)
+                .toList();
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/{hashId}")

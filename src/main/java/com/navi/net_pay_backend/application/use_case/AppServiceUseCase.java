@@ -8,11 +8,15 @@ import com.navi.net_pay_backend.domain.exception.DomainException;
 import com.navi.net_pay_backend.domain.exception.EntityAlreadyExistsException;
 import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppServiceRepository;
+import com.navi.net_pay_backend.domain.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -22,6 +26,7 @@ public class AppServiceUseCase {
     private static final BigDecimal ZERO = BigDecimal.ZERO;
 
     private final AppServiceRepository serviceRepository;
+    private final AuditLogService auditLogService;
 
     public AppService findByHashId(String hashId) {
         return serviceRepository.findByHashIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
@@ -33,11 +38,12 @@ public class AppServiceUseCase {
         return serviceRepository.findAll(queryDto);
     }
 
+    @Transactional
     public AppService create(AppService request) {
         validateRequiredFields(request);
         validateNameIsAvailable(request.getName(), null);
 
-        return serviceRepository.save(AppService.builder()
+        AppService saved = serviceRepository.save(AppService.builder()
                 .hashId(UUID.randomUUID().toString())
                 .name(request.getName().trim())
                 .speed(request.getSpeed().trim())
@@ -47,8 +53,11 @@ public class AppServiceUseCase {
                 .tpStatus(request.getTpStatus())
                 .build()
         );
+        auditLogService.record("service_created", "Creó servicio", "SERVICE", saved.getHashId(), after(saved));
+        return saved;
     }
 
+    @Transactional
     public AppService update(String hashId, AppService request) {
         AppService existing = serviceRepository.findByHashIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new EntityNotFoundException("service_not_found"));
@@ -56,7 +65,7 @@ public class AppServiceUseCase {
         validateRequiredFields(request);
         validateNameIsAvailable(request.getName().trim(), existing.getId());
 
-        return serviceRepository.save(AppService.builder()
+        AppService saved = serviceRepository.save(AppService.builder()
                 .id(existing.getId())
                 .hashId(existing.getHashId())
                 .name(request.getName().trim())
@@ -68,8 +77,12 @@ public class AppServiceUseCase {
                 .createdAt(existing.getCreatedAt())
                 .build()
         );
+        auditLogService.record("service_updated", "Modificó servicio", "SERVICE", saved.getHashId(),
+                diff(existing, saved));
+        return saved;
     }
 
+    @Transactional
     public void delete(String hashId) {
         AppService existing = serviceRepository.findByHashIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new EntityNotFoundException("service_not_found"));
@@ -87,6 +100,7 @@ public class AppServiceUseCase {
                 .deletedAt(LocalDateTime.now())
                 .build()
         );
+        auditLogService.record("service_deleted", "Eliminó servicio", "SERVICE", existing.getHashId(), before(existing));
     }
 
     private void validateRequiredFields(AppService request) {
@@ -116,5 +130,34 @@ public class AppServiceUseCase {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private Map<String, Object> snapshot(AppService service) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("name", service.getName());
+        map.put("speed", service.getSpeed());
+        map.put("monthlyPrice", service.getMonthlyPrice());
+        map.put("type", service.getTpType() != null ? service.getTpType().getInternalId() : null);
+        map.put("status", service.getTpStatus() != null ? service.getTpStatus().getInternalId() : null);
+        return map;
+    }
+
+    private Map<String, Object> before(AppService service) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("before", snapshot(service));
+        return map;
+    }
+
+    private Map<String, Object> after(AppService service) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("after", snapshot(service));
+        return map;
+    }
+
+    private Map<String, Object> diff(AppService before, AppService after) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("before", snapshot(before));
+        map.put("after", snapshot(after));
+        return map;
     }
 }

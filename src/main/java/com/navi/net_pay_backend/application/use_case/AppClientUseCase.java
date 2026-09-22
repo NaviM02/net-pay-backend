@@ -12,11 +12,15 @@ import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppClientRepository;
 import com.navi.net_pay_backend.domain.repository.AppServiceRepository;
 import com.navi.net_pay_backend.domain.repository.AppUserRepository;
+import com.navi.net_pay_backend.domain.service.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -26,6 +30,7 @@ public class AppClientUseCase {
     private final AppClientRepository clientRepository;
     private final AppServiceRepository serviceRepository;
     private final AppUserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public AppClient findByHashId(String hashId) {
         return clientRepository.findByHashIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
@@ -46,10 +51,11 @@ public class AppClientUseCase {
         return clientRepository.findAll(queryDto);
     }
 
+    @Transactional
     public AppClient create(AppClient client) {
         validateRequiredFields(client);
 
-        return clientRepository.save(AppClient.builder()
+        AppClient saved = clientRepository.save(AppClient.builder()
                 .hashId(UUID.randomUUID().toString())
                 .businessName(client.getBusinessName().trim())
                 .contactName(client.getContactName().trim())
@@ -64,14 +70,17 @@ public class AppClientUseCase {
                 .tpStatus(resolveStatus(client.getTpStatus()))
                 .build()
         );
+        auditLogService.record("client_created", "Creó cliente", "CLIENT", saved.getHashId(), after(saved));
+        return saved;
     }
 
+    @Transactional
     public AppClient update(String hashId, AppClient client) {
         AppClient existing = findByHashId(hashId);
 
         validateRequiredFields(client);
 
-        return clientRepository.save(AppClient.builder()
+        AppClient saved = clientRepository.save(AppClient.builder()
                 .id(existing.getId())
                 .hashId(existing.getHashId())
                 .businessName(client.getBusinessName().trim())
@@ -88,6 +97,9 @@ public class AppClientUseCase {
                 .createdAt(existing.getCreatedAt())
                 .build()
         );
+        auditLogService.record("client_updated", "Modificó cliente", "CLIENT", saved.getHashId(),
+                diff(existing, saved));
+        return saved;
     }
 
     public AppClient assignCollector(String hashId, Long collectorId) {
@@ -116,6 +128,7 @@ public class AppClientUseCase {
         );
     }
 
+    @Transactional
     public void delete(String hashId) {
         AppClient existing = findByHashId(hashId);
 
@@ -137,6 +150,7 @@ public class AppClientUseCase {
                 .deletedAt(LocalDateTime.now())
                 .build()
         );
+        auditLogService.record("client_deleted", "Eliminó cliente", "CLIENT", existing.getHashId(), before(existing));
     }
 
     private AdmTypology resolveStatus(AdmTypology status) {
@@ -175,5 +189,38 @@ public class AppClientUseCase {
 
     private boolean isBlank(String value) {
         return value == null || value.isBlank();
+    }
+
+    private Map<String, Object> snapshot(AppClient client) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("businessName", client.getBusinessName());
+        map.put("contactName", client.getContactName());
+        map.put("contactEmail", client.getContactEmail());
+        map.put("contactPhone", client.getContactPhone());
+        map.put("address", client.getAddress());
+        map.put("customerSince", client.getCustomerSince() != null ? client.getCustomerSince().toString() : null);
+        map.put("status", client.getTpStatus() != null ? client.getTpStatus().getInternalId() : null);
+        map.put("serviceHashId", client.getService() != null ? client.getService().getHashId() : null);
+        map.put("collectorHashId", client.getCollector() != null ? client.getCollector().getHashId() : null);
+        return map;
+    }
+
+    private Map<String, Object> before(AppClient client) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("before", snapshot(client));
+        return map;
+    }
+
+    private Map<String, Object> after(AppClient client) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("after", snapshot(client));
+        return map;
+    }
+
+    private Map<String, Object> diff(AppClient before, AppClient after) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("before", snapshot(before));
+        map.put("after", snapshot(after));
+        return map;
     }
 }
