@@ -1,10 +1,13 @@
 package com.navi.net_pay_backend.infrastructure.http.controller;
 
 import com.navi.net_pay_backend.application.use_case.AppPaymentUseCase;
+import com.navi.net_pay_backend.application.use_case.ReceiptUseCase;
 import com.navi.net_pay_backend.domain.dto.AppPaymentQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.entity.AppPayment;
+import com.navi.net_pay_backend.domain.entity.Receipt;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ReceiptResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -19,6 +22,7 @@ import java.util.List;
 public class AppPaymentController {
 
     private final AppPaymentUseCase paymentUseCase;
+    private final ReceiptUseCase receiptUseCase;
     private final HttpMapper httpMapper;
 
     @GetMapping("/{hashId}")
@@ -54,6 +58,18 @@ public class AppPaymentController {
     ) {
         AppPayment updated = paymentUseCase.update(hashId, payment);
         return ResponseEntity.ok(httpMapper.toAppPaymentResponse(updated));
+    }
+
+    @GetMapping("/{hashId}/receipt")
+    public ResponseEntity<ReceiptResponseDto> receipt(@PathVariable String hashId) {
+        return ResponseEntity.ok(httpMapper.toReceiptResponse(receiptUseCase.findByPaymentHashId(hashId)));
+    }
+
+    @GetMapping("/{hashId}/receipt/pdf")
+    public ResponseEntity<byte[]> receiptPdf(@PathVariable String hashId) {
+        Receipt receipt = receiptUseCase.findByPaymentHashId(hashId);
+        byte[] pdf = receiptUseCase.resolvePdf(receipt);
+        return ReceiptController.pdfResponse(pdf, receipt.getReceiptNumber());
     }
 
     @DeleteMapping("/{hashId}")

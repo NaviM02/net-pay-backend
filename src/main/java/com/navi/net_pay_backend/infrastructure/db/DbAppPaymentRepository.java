@@ -67,12 +67,12 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 predicates.add(cb.equal(root.get("tpPaymentMethod").get("internalId"), queryDto.getMethod()));
             }
 
-            if (queryDto.getPaidAtFrom() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("paidAt"), queryDto.getPaidAtFrom()));
+            if (queryDto.getFromDate() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("paidAt"), queryDto.getFromDate()));
             }
 
-            if (queryDto.getPaidAtTo() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("paidAt"), queryDto.getPaidAtTo()));
+            if (queryDto.getToDate() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("paidAt"), queryDto.getToDate()));
             }
 
             if (queryDto.getClientHashId() != null && !queryDto.getClientHashId().isBlank()) {

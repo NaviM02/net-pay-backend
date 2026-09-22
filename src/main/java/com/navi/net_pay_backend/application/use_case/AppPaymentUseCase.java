@@ -14,7 +14,9 @@ import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppClientRepository;
 import com.navi.net_pay_backend.domain.repository.AppPaymentRepository;
 import com.navi.net_pay_backend.domain.repository.AppUserRepository;
+import com.navi.net_pay_backend.domain.repository.ClientChargeRepository;
 import com.navi.net_pay_backend.domain.repository.PaymentAllocationRepository;
+import com.navi.net_pay_backend.domain.repository.ReceiptRepository;
 import com.navi.net_pay_backend.domain.service.AuditLogService;
 import com.navi.net_pay_backend.domain.service.SecurityContext;
 import lombok.RequiredArgsConstructor;
@@ -39,7 +41,10 @@ public class AppPaymentUseCase {
     private final AppClientRepository clientRepository;
     private final AppUserRepository userRepository;
     private final PaymentAllocationRepository allocationRepository;
+    private final ClientChargeRepository clientChargeRepository;
+    private final ReceiptRepository receiptRepository;
     private final ClientChargeGenerator chargeGenerator;
+    private final ReceiptUseCase receiptUseCase;
     private final AuditLogService auditLogService;
     private final SecurityContext securityContext;
 
@@ -62,6 +67,7 @@ public class AppPaymentUseCase {
 
         AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
         applyLedger(client, saved);
+        issueReceiptIfCompleted(saved);
         auditLogService.record("payment_created", "Registró pago", "PAYMENT", saved.getHashId(), after(saved));
         return withAllocations(saved);
     }
@@ -74,6 +80,7 @@ public class AppPaymentUseCase {
 
         AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
         applyLedger(client, saved);
+        issueReceiptIfCompleted(saved);
         auditLogService.record("payment_created", "Registró pago", "PAYMENT", saved.getHashId(), after(saved));
         return withAllocations(saved);
     }
@@ -81,6 +88,10 @@ public class AppPaymentUseCase {
     @Transactional
     public AppPayment update(String hashId, AppPayment payment) {
         AppPayment existing = findByHashId(hashId);
+
+        if (isCompleted(existing) && receiptRepository.findByPaymentId(existing.getId()).isPresent()) {
+            throw new DomainException("payment_locked_by_receipt");
+        }
 
         AppClient client = payment.getClient() != null && payment.getClient().getId() != null
                 ? resolveClient(payment)
@@ -122,6 +133,7 @@ public class AppPaymentUseCase {
         );
 
         applyLedger(client, updated);
+        issueReceiptIfCompleted(updated);
         auditLogService.record("payment_updated", "Modificó pago", "PAYMENT", updated.getHashId(),
                 diff(existing, updated));
         return withAllocations(updated);
@@ -151,6 +163,26 @@ public class AppPaymentUseCase {
         );
 
         auditLogService.record("payment_deleted", "Anuló pago", "PAYMENT", existing.getHashId(), before(existing));
+    }
+
+    // ── Receipt ─────────────────────────────────────────────────────────────
+
+    private boolean isCompleted(AppPayment payment) {
+        return payment.getTpPaymentStatus() != null
+                && TypologyEnum.COMPLETED.getId().equals(payment.getTpPaymentStatus().getInternalId());
+    }
+
+    private void issueReceiptIfCompleted(AppPayment payment) {
+        if (!isCompleted(payment) || payment.getClient() == null) {
+            return;
+        }
+        ClientCharge firstCharge = clientChargeRepository
+                .findByClientIdOrderByPeriod(payment.getClient().getId())
+                .stream()
+                .filter(charge -> allocationRepository.sumAmountByChargeId(charge.getId()).signum() > 0)
+                .findFirst()
+                .orElse(null);
+        receiptUseCase.issueForPayment(payment, firstCharge);
     }
 
     // ── Ledger ──────────────────────────────────────────────────────────────
