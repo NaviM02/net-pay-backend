@@ -15,9 +15,13 @@ public interface AppUserRepository {
 
     Optional<AppUser> findByPublicIdAndStatusNot(String publicId, Long statusId);
 
+    Optional<AppUser> findByResetTokenHash(String resetTokenHash);
+
     PaginatedResult<AppUser> findAll(AppUserQueryDto queryDto);
 
     boolean existsByEmailAndStatusIn(String email, List<Long> statusIds);
+
+    boolean existsByEmailAndStatusNot(String email, Long statusId);
 
     AppUser save(AppUser user);
 }

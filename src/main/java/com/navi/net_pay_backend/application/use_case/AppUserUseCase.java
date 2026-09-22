@@ -10,13 +10,13 @@ import com.navi.net_pay_backend.domain.exception.DomainException;
 import com.navi.net_pay_backend.domain.exception.EntityAlreadyExistsException;
 import com.navi.net_pay_backend.domain.repository.AppUserRepository;
 import com.navi.net_pay_backend.domain.service.AuditLogService;
+import com.navi.net_pay_backend.domain.service.PasswordHashService;
 import com.navi.net_pay_backend.domain.service.SecurityContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -24,6 +24,7 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class AppUserUseCase {
     private final AppUserRepository userRepository;
+    private final PasswordHashService passwordHashService;
     private final AuditLogService auditLogService;
     private final SecurityContext securityContext;
 
@@ -43,7 +44,10 @@ public class AppUserUseCase {
 
     @Transactional
     public AppUser create(AppUser user) {
-        if (userRepository.existsByEmailAndStatusIn(user.getEmail(), List.of(TypologyEnum.ACTIVE.getId(), TypologyEnum.INACTIVE.getId()))) {
+        if (isBlank(user.getPassword())) {
+            throw new DomainException("user_password_required");
+        }
+        if (userRepository.existsByEmailAndStatusNot(user.getEmail(), TypologyEnum.DELETED.getId())) {
             throw new EntityAlreadyExistsException("user_email_must_be_unique");
         }
 
@@ -51,7 +55,7 @@ public class AppUserUseCase {
                 .hashId(UUID.randomUUID().toString())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .password(user.getPassword())
+                .password(passwordHashService.hash(user.getPassword()))
                 .tpRole(user.getTpRole())
                 .tpStatus(user.getTpStatus())
                 .build();
@@ -66,15 +70,27 @@ public class AppUserUseCase {
         AppUser existingUser = userRepository.findByPublicIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new DomainException("user_not_found"));
 
+        String email = userDetails.getEmail() != null ? userDetails.getEmail() : existingUser.getEmail();
+        if (!email.equals(existingUser.getEmail())
+                && userRepository.existsByEmailAndStatusNot(email, TypologyEnum.DELETED.getId())) {
+            throw new EntityAlreadyExistsException("user_email_must_be_unique");
+        }
+
+        String password = userDetails.getPassword() != null && !userDetails.getPassword().isBlank()
+                ? passwordHashService.hash(userDetails.getPassword())
+                : existingUser.getPassword();
+
         AppUser updatedUser = AppUser.builder()
                 .id(existingUser.getId())
                 .hashId(existingUser.getHashId())
                 .fullName(userDetails.getFullName())
-                .email(userDetails.getEmail())
-                .password(userDetails.getPassword() != null ? userDetails.getPassword() : existingUser.getPassword())
+                .email(email)
+                .password(password)
                 .tpRole(userDetails.getTpRole() != null ? userDetails.getTpRole() : existingUser.getTpRole())
                 .tpStatus(userDetails.getTpStatus() != null ? userDetails.getTpStatus() : existingUser.getTpStatus())
                 .lastLoginAt(existingUser.getLastLoginAt())
+                .resetTokenHash(existingUser.getResetTokenHash())
+                .resetTokenExpiresAt(existingUser.getResetTokenExpiresAt())
                 .build();
 
         AppUser saved = userRepository.save(updatedUser);
@@ -101,6 +117,10 @@ public class AppUserUseCase {
 
         userRepository.save(deletedUser);
         auditLogService.record("user_deleted", "Eliminó usuario", "USER", user.getHashId(), before(user));
+    }
+
+    private boolean isBlank(String value) {
+        return value == null || value.isBlank();
     }
 
     private Map<String, Object> snapshot(AppUser user) {

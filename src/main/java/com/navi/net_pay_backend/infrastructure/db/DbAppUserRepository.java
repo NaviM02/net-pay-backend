@@ -51,6 +51,11 @@ public class DbAppUserRepository implements AppUserRepository {
     }
 
     @Override
+    public Optional<AppUser> findByResetTokenHash(String resetTokenHash) {
+        return repository.findByResetTokenHash(resetTokenHash).map(this::toDomain);
+    }
+
+    @Override
     public PaginatedResult<AppUser> findAll(AppUserQueryDto queryDto) {
         Specification<AppUserEntity> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -116,6 +121,11 @@ public class DbAppUserRepository implements AppUserRepository {
     }
 
     @Override
+    public boolean existsByEmailAndStatusNot(String email, Long statusId) {
+        return repository.existsByEmailAndTpStatusInternalIdNot(email, statusId);
+    }
+
+    @Override
     public AppUser save(AppUser user) {
         AppUserEntity entity = user.getId() != null
                 ? repository.findById(user.getId()).orElseGet(AppUserEntity::new)
@@ -125,6 +135,8 @@ public class DbAppUserRepository implements AppUserRepository {
         entity.setFullName(user.getFullName());
         entity.setEmail(user.getEmail());
         entity.setPassword(user.getPassword());
+        entity.setResetTokenHash(user.getResetTokenHash());
+        entity.setResetTokenExpiresAt(user.getResetTokenExpiresAt());
 
         if (user.getTpStatus() != null) {
             entity.setTpStatus(resolveTypology(user.getTpStatus()));
@@ -180,6 +192,8 @@ public class DbAppUserRepository implements AppUserRepository {
                 .tpStatus(statusDto)
                 .tpRole(roleDto)
                 .lastLoginAt(entity.getLastLoginAt())
+                .resetTokenHash(entity.getResetTokenHash())
+                .resetTokenExpiresAt(entity.getResetTokenExpiresAt())
                 .build();
     }
 }

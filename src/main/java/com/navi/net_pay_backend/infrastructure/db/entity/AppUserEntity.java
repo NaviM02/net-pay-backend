@@ -25,7 +25,7 @@ public class AppUserEntity {
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
-    @Column(name = "email", nullable = false, unique = true, length = 150)
+    @Column(name = "email", nullable = false, length = 150)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
@@ -33,6 +33,12 @@ public class AppUserEntity {
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
+
+    @Column(name = "reset_token_hash", length = 255)
+    private String resetTokenHash;
+
+    @Column(name = "reset_token_expires_at")
+    private LocalDateTime resetTokenExpiresAt;
 
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
