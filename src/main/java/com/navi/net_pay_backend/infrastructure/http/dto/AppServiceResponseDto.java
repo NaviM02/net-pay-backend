@@ -13,6 +13,7 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class AppServiceResponseDto {
+    private Long id;
     private String hashId;
     private String name;
     private String speed;
