@@ -43,13 +43,19 @@ public class HtmlEmailTemplateRenderer implements EmailTemplateRenderer {
                        text-decoration:none;font-weight:bold;font-size:14px;padding:14px 28px;
                        border-radius:8px;">Restablecer contraseña</a>
                 </p>
+                <p style="margin:0 0 8px 0;font-size:13px;line-height:1.6;color:#6b7280;">
+                    Si el botón no redirige, copiá y pegá el siguiente enlace en tu navegador:
+                </p>
+                <p style="margin:0 0 16px 0;font-size:12px;line-height:1.6;word-break:break-all;">
+                    <a href="%s" style="color:#4f46e5;">%s</a>
+                </p>
                 <p style="margin:0 0 16px 0;font-size:13px;line-height:1.6;color:#6b7280;">
                     El enlace vence en %d minutos y solo puede usarse una vez.
                 </p>
                 <p style="margin:0;font-size:13px;line-height:1.6;color:#9ca3af;">
                     Si no solicitaste este cambio, ignorá este correo; tu contraseña seguirá igual.
                 </p>
-                """.formatted(esc(fullName), APP_NAME, esc(resetUrl), expiryMinutes);
+                """.formatted(esc(fullName), APP_NAME, esc(resetUrl), esc(resetUrl), esc(resetUrl), expiryMinutes);
 
         return render("Recuperación de contraseña", content);
     }

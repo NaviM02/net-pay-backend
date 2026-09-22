@@ -128,9 +128,18 @@ public class PasswordResetUseCase {
     }
 
     private String resolveFrontendBaseUrl() {
-        return frontendBaseUrl != null && frontendBaseUrl.endsWith("/")
-                ? frontendBaseUrl.substring(0, frontendBaseUrl.length() - 1)
-                : frontendBaseUrl;
+        if (frontendBaseUrl == null) {
+            return "";
+        }
+        String base = frontendBaseUrl.trim();
+        // Defensa: en .properties las comillas son literales, no un delimitador
+        if (base.length() >= 2 && base.startsWith("\"") && base.endsWith("\"")) {
+            base = base.substring(1, base.length() - 1).trim();
+        }
+        while (base.endsWith("/")) {
+            base = base.substring(0, base.length() - 1);
+        }
+        return base;
     }
 
     private boolean isBlank(String value) {
