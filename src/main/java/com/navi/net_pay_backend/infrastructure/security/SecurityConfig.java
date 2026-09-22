@@ -58,6 +58,7 @@ public class SecurityConfig {
 
         // Cabeceras permitidas (Importantísimo incluir Authorization para los Tokens)
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
+        configuration.setExposedHeaders(Arrays.asList("X-Total-Count", "Authorization"));
 
         // Permitir el envío de credenciales/cookies si fuera necesario en el futuro
         configuration.setAllowCredentials(true);

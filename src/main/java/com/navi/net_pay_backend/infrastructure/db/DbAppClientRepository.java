@@ -47,6 +47,20 @@ public class DbAppClientRepository implements AppClientRepository {
     }
 
     @Override
+    public List<AppClient> findAllNotDeleted() {
+        return repository.findByTpStatusInternalIdNot(TypologyEnum.DELETED.getId()).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
+    public List<AppClient> findByCollectorId(Long collectorId) {
+        return repository.findByCollectorIdAndTpStatusInternalIdNot(collectorId, TypologyEnum.DELETED.getId()).stream()
+                .map(this::toDomain)
+                .toList();
+    }
+
+    @Override
     public PaginatedResult<AppClient> findAll(AppClientQueryDto queryDto) {
         Specification<AppClientEntity> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
