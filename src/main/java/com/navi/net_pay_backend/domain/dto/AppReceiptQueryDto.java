@@ -8,5 +8,6 @@ public class AppReceiptQueryDto extends QueryDto {
     private String search;
     private Long periodId;
     private String clientHashId;
+    private Long collectorId;
     private Long excludeStatus;
 }

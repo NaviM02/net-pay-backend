@@ -16,5 +16,9 @@ public interface AppUserJpaRepository extends JpaRepository<AppUserEntity, Long>
 
     Optional<AppUserEntity> findByHashIdAndTpStatusInternalIdNot(String hashId, Long internalId);
 
+    Optional<AppUserEntity> findByResetTokenHash(String resetTokenHash);
+
     boolean existsByEmailAndTpStatusInternalIdIn(String email, List<Long> internalIds);
+
+    boolean existsByEmailAndTpStatusInternalIdNot(String email, Long internalId);
 }

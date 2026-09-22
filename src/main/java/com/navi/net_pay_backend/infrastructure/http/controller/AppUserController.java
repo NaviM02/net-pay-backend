@@ -1,8 +1,11 @@
 package com.navi.net_pay_backend.infrastructure.http.controller;
 
+import com.navi.net_pay_backend.application.model.ForgotPasswordRequest;
+import com.navi.net_pay_backend.application.model.ResetPasswordRequest;
 import com.navi.net_pay_backend.application.use_case.AppClientUseCase;
 import com.navi.net_pay_backend.application.use_case.AppUserUseCase;
 import com.navi.net_pay_backend.application.use_case.AuditLogUseCase;
+import com.navi.net_pay_backend.application.use_case.PasswordResetUseCase;
 import com.navi.net_pay_backend.domain.dto.AppClientQueryDto;
 import com.navi.net_pay_backend.domain.dto.AppUserQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
@@ -11,6 +14,8 @@ import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AuditLogResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.MessageResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ResetTokenValidationDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -27,7 +32,31 @@ public class AppUserController {
     private final AppUserUseCase userUseCase;
     private final AppClientUseCase clientUseCase;
     private final AuditLogUseCase auditLogUseCase;
+    private final PasswordResetUseCase passwordResetUseCase;
     private final HttpMapper httpMapper;
+
+    @PostMapping("/forgot-password")
+    public ResponseEntity<MessageResponseDto> forgotPassword(@RequestBody ForgotPasswordRequest request) {
+        passwordResetUseCase.requestReset(request);
+        return ResponseEntity.ok(MessageResponseDto.builder()
+                .message("Si el correo está registrado, te enviamos un enlace para restablecer la contraseña.")
+                .build());
+    }
+
+    @GetMapping("/reset-password/validate")
+    public ResponseEntity<ResetTokenValidationDto> validateResetToken(@RequestParam String token) {
+        return ResponseEntity.ok(ResetTokenValidationDto.builder()
+                .valid(passwordResetUseCase.validateToken(token))
+                .build());
+    }
+
+    @PostMapping("/reset-password")
+    public ResponseEntity<MessageResponseDto> resetPassword(@RequestBody ResetPasswordRequest request) {
+        passwordResetUseCase.resetPassword(request);
+        return ResponseEntity.ok(MessageResponseDto.builder()
+                .message("Contraseña actualizada correctamente.")
+                .build());
+    }
 
     @GetMapping("/me")
     public ResponseEntity<AppUserResponseDto> findMe() {

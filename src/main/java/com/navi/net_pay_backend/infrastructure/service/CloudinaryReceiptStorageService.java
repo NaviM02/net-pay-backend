@@ -83,7 +83,7 @@ public class CloudinaryReceiptStorageService implements ReceiptStorageService {
             throw new DomainException("receipt_document_not_stored");
         }
         try {
-            String url = "https://res.cloudinary.com/" + cloudName + "/raw/upload/" + publicId + ".pdf";
+            String url = "https://res.cloudinary.com/" + cloudName + "/raw/upload/" + publicId;
             HttpClient client = HttpClient.newHttpClient();
             HttpRequest request = HttpRequest.newBuilder(URI.create(url)).GET().build();
             HttpResponse<byte[]> response = client.send(request, HttpResponse.BodyHandlers.ofByteArray());

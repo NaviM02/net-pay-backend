@@ -71,6 +71,10 @@ public class DbReceiptRepository implements ReceiptRepository {
                 predicates.add(cb.equal(root.get("client").get("hashId"), queryDto.getClientHashId()));
             }
 
+            if (queryDto.getCollectorId() != null) {
+                predicates.add(cb.equal(root.get("collector").get("id"), queryDto.getCollectorId()));
+            }
+
             if (queryDto.getExcludeStatus() != null) {
                 predicates.add(cb.notEqual(root.get("payment").get("tpPaymentStatus").get("internalId"), queryDto.getExcludeStatus()));
             }

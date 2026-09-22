@@ -34,8 +34,13 @@ public class SecurityConfig {
                 .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
-                        // Permitir acceso público únicamente al login
-                        .requestMatchers("/api/auth/login").permitAll()
+                        // Permitir acceso público al login y a la recuperación de contraseña
+                        .requestMatchers(
+                                "/api/auth/login",
+                                "/api/users/forgot-password",
+                                "/api/users/reset-password",
+                                "/api/users/reset-password/validate"
+                        ).permitAll()
                         // Cualquier otra ruta del backend requerirá que el usuario esté autenticado
                         .anyRequest().authenticated()
                 )

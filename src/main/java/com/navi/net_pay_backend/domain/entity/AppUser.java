@@ -5,7 +5,7 @@ import lombok.*;
 import java.time.LocalDateTime;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor @ToString
 public class AppUser {
     private Long id;
@@ -16,4 +16,6 @@ public class AppUser {
     private AdmTypology tpRole;
     private AdmTypology tpStatus;
     private LocalDateTime lastLoginAt;
+    private String resetTokenHash;
+    private LocalDateTime resetTokenExpiresAt;
 }
