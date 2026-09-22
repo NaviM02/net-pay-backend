@@ -10,6 +10,8 @@ import java.util.Optional;
 @Repository
 public interface AppClientJpaRepository extends JpaRepository<AppClientEntity, Long>, JpaSpecificationExecutor<AppClientEntity> {
 
+    Optional<AppClientEntity> findByIdAndTpStatusInternalIdNot(Long id, Long internalId);
+
     Optional<AppClientEntity> findByHashIdAndTpStatusInternalIdNot(String hashId, Long internalId);
 
     long countByServiceIdAndTpStatusInternalIdNot(Long serviceId, Long internalId);
