@@ -32,6 +32,7 @@ public class AppUserUseCase {
     }
 
     public PaginatedResult<AppUser> findAll(AppUserQueryDto queryDto) {
+        queryDto.setExcludeStatus(TypologyEnum.DELETED.getId());
         return userRepository.findAll(queryDto);
     }
 
@@ -40,17 +41,13 @@ public class AppUserUseCase {
             throw new EntityAlreadyExistsException("user_email_must_be_unique");
         }
 
-        Long roleId = (user.getTpRole() != null && user.getTpRole().getTypologyId() != null)
-                ? user.getTpRole().getTypologyId()
-                : 2L;
-
         AppUser newUser = AppUser.builder()
                 .hashId(UUID.randomUUID().toString())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .passwordHash(user.getPasswordHash())
-                .tpRole(AdmTypology.builder().typologyId(roleId).build())
-                .tpStatus(AdmTypology.builder().typologyId(TypologyEnum.ACTIVE.getId()).build())
+                .password(user.getPassword())
+                .tpRole(user.getTpRole())
+                .tpStatus(user.getTpStatus())
                 .build();
 
         return userRepository.save(newUser);
@@ -60,12 +57,13 @@ public class AppUserUseCase {
         AppUser existingUser = userRepository.findByPublicIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new DomainException("user_not_found"));
 
+        System.out.println(userDetails);
         AppUser updatedUser = AppUser.builder()
                 .id(existingUser.getId())
                 .hashId(existingUser.getHashId())
                 .fullName(userDetails.getFullName())
                 .email(userDetails.getEmail())
-                .passwordHash(userDetails.getPasswordHash() != null ? userDetails.getPasswordHash() : existingUser.getPasswordHash())
+                .password(userDetails.getPassword() != null ? userDetails.getPassword() : existingUser.getPassword())
                 .tpRole(userDetails.getTpRole() != null ? userDetails.getTpRole() : existingUser.getTpRole())
                 .tpStatus(userDetails.getTpStatus() != null ? userDetails.getTpStatus() : existingUser.getTpStatus())
                 .lastLoginAt(existingUser.getLastLoginAt())
@@ -74,7 +72,7 @@ public class AppUserUseCase {
         return userRepository.save(updatedUser);
     }
 
-    public void deleteLogically(String hashId) {
+    public void delete(String hashId) {
         AppUser user = userRepository.findByPublicIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new DomainException("user_not_found"));
 
@@ -83,7 +81,7 @@ public class AppUserUseCase {
                 .hashId(user.getHashId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .passwordHash(user.getPasswordHash())
+                .password(user.getPassword())
                 .tpRole(user.getTpRole())
                 .tpStatus(AdmTypology.builder().typologyId(TypologyEnum.DELETED.getId()).build())
                 .lastLoginAt(user.getLastLoginAt())

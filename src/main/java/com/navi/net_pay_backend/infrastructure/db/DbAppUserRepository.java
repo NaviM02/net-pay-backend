@@ -7,25 +7,23 @@ import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.domain.repository.AppUserRepository;
 import com.navi.net_pay_backend.infrastructure.db.entity.AdmTypologyEntity;
 import com.navi.net_pay_backend.infrastructure.db.entity.AppUserEntity;
-import jakarta.persistence.EntityManager;
-import jakarta.persistence.PersistenceContext;
-import jakarta.persistence.Query;
+import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 
 @Repository
 @RequiredArgsConstructor
 public class DbAppUserRepository implements AppUserRepository {
 
     private final AppUserJpaRepository repository;
-    @PersistenceContext
-    private final EntityManager entityManager;
 
     @Override
     public Optional<AppUser> findByEmailAndStatus(String email, Long statusId) {
@@ -53,51 +51,54 @@ public class DbAppUserRepository implements AppUserRepository {
 
     @Override
     public PaginatedResult<AppUser> findAll(AppUserQueryDto queryDto) {
-        StringBuilder whereStmt = new StringBuilder(" WHERE 1 = 1");
-        Map<String, Object> binds = new HashMap<>();
+        Specification<AppUserEntity> specification = (root, query, cb) -> {
+            List<Predicate> predicates = new ArrayList<>();
 
-        if (queryDto.getIds() != null && !queryDto.getIds().isEmpty()) {
-            whereStmt.append(" AND u.id IN (:ids)");
-            binds.put("ids", queryDto.getIds());
+            if (queryDto.getIds() != null && !queryDto.getIds().isEmpty()) {
+                predicates.add(root.get("id").in(queryDto.getIds()));
+            }
+
+            if (queryDto.getEmail() != null && !queryDto.getEmail().isBlank()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("email")), "%" + queryDto.getEmail().toLowerCase() + "%"
+                ));
+            }
+
+            if (queryDto.getFullName() != null && !queryDto.getFullName().isBlank()) {
+                predicates.add(cb.like(
+                        cb.lower(root.get("fullName")), "%" + queryDto.getFullName().toLowerCase() + "%"
+                ));
+            }
+
+            return cb.and(predicates.toArray(new Predicate[0]));
+        };
+
+        Sort.Direction direction = queryDto.isAsc()
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        String orderColumn = "id";
+
+        if ("email".equals(queryDto.getColumnOrder())) {
+            orderColumn = "email";
+        } else if ("fullName".equals(queryDto.getColumnOrder())) {
+            orderColumn = "fullName";
         }
-        if (queryDto.getEmail() != null && !queryDto.getEmail().isBlank()) {
-            whereStmt.append(" AND LOWER(u.email) LIKE :email");
-            binds.put("email", "%" + queryDto.getEmail().toLowerCase() + "%");
-        }
-        if (queryDto.getFullName() != null && !queryDto.getFullName().isBlank()) {
-            whereStmt.append(" AND LOWER(u.full_name) LIKE :fullName");
-            binds.put("fullName", "%" + queryDto.getFullName().toLowerCase() + "%");
-        }
 
-        String countQueryStr = "SELECT COUNT(*) FROM tc_user u" + whereStmt;
-        Query countQuery = entityManager.createNativeQuery(countQueryStr);
-        binds.forEach(countQuery::setParameter);
-        long total = ((Number) countQuery.getSingleResult()).longValue();
-
-        if (total == 0) return new PaginatedResult<>(List.of(), 0);
-
-        Map<String, String> colMap = Map.of(
-            "id", "u.id",
-            "email", "u.email",
-            "fullName", "u.full_name"
+        Pageable pageable = PageRequest.of(
+                queryDto.getOffset() / queryDto.getSize(),
+                queryDto.getSize(),
+                Sort.by(direction, orderColumn)
         );
-        String orderColumn = colMap.getOrDefault(queryDto.getColumnOrder(), "u.id");
-        String direction = queryDto.isAsc() ? "ASC" : "DESC";
-        whereStmt.append(" ORDER BY ").append(orderColumn).append(" ").append(direction);
 
-        String selectQueryStr = "SELECT * FROM tc_user u" + whereStmt;
-        Query selectQuery = entityManager.createNativeQuery(selectQueryStr, AppUserEntity.class); // Mapea a la Entidad
-        binds.forEach(selectQuery::setParameter);
+        Page<AppUserEntity> page = repository.findAll(specification, pageable);
 
-        if (queryDto.getOffset() != null && queryDto.getSize() != null && queryDto.getSize() > 0) {
-            selectQuery.setFirstResult(queryDto.getOffset());
-            selectQuery.setMaxResults(queryDto.getSize());
-        }
+        List<AppUser> items = page.getContent()
+                .stream()
+                .map(this::toDomain)
+                .toList();
 
-        @SuppressWarnings("unchecked")
-        List<AppUserEntity> entities = selectQuery.getResultList();
-        List<AppUser> items = entities.stream().map(this::toDomain).toList();
-        return new PaginatedResult<>(items, total);
+        return new PaginatedResult<>(items, page.getTotalElements());
     }
 
     @Override
@@ -114,7 +115,7 @@ public class DbAppUserRepository implements AppUserRepository {
         entity.setHashId(user.getHashId());
         entity.setFullName(user.getFullName());
         entity.setEmail(user.getEmail());
-        entity.setPasswordHash(user.getPasswordHash());
+        entity.setPassword(user.getPassword());
 
         // Asignamos las referencias lógicas mediante IDs simulando el comportamiento sin constraints
         if (user.getTpStatus() != null) {
@@ -159,7 +160,7 @@ public class DbAppUserRepository implements AppUserRepository {
                 .hashId(entity.getHashId())
                 .fullName(entity.getFullName())
                 .email(entity.getEmail())
-                .passwordHash(entity.getPasswordHash())
+                .password(entity.getPassword())
                 .tpStatus(statusDto)
                 .tpRole(roleDto)
                 .lastLoginAt(entity.getLastLoginAt())

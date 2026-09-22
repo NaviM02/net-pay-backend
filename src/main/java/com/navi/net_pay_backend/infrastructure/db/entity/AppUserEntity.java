@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 public class AppUserEntity {
 
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
@@ -24,11 +25,11 @@ public class AppUserEntity {
     @Column(name = "full_name", nullable = false, length = 150)
     private String fullName;
 
-    @Column(nullable = false, unique = true, length = 150)
+    @Column(name = "email", nullable = false, unique = true, length = 150)
     private String email;
 
     @Column(name = "password_hash", nullable = false, length = 255)
-    private String passwordHash;
+    private String password;
 
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
@@ -42,11 +43,11 @@ public class AppUserEntity {
     @Column(name = "deleted_at")
     private LocalDateTime deletedAt;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tp_status", referencedColumnName = "typology_id")
     private AdmTypologyEntity tpStatus;
 
-    @ManyToOne(fetch = FetchType.EAGER)
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "tp_role", referencedColumnName = "typology_id")
     private AdmTypologyEntity tpRole;
 }

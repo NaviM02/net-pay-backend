@@ -6,13 +6,13 @@ import java.time.LocalDateTime;
 
 @Getter
 @Builder
-@AllArgsConstructor
+@AllArgsConstructor @ToString
 public class AppUser {
     private Long id;
     private String hashId;
     private String fullName;
     private String email;
-    private String passwordHash;
+    private String password;
     private AdmTypology tpRole;
     private AdmTypology tpStatus;
     private LocalDateTime lastLoginAt;
