@@ -16,6 +16,20 @@ Stack:
 - Flyway (schema migrations)
 - Lombok
 
+## Companion docs (read before implementing anything)
+
+| File | What it holds |
+| --- | --- |
+| **`DOMAIN-MODEL.md`** | **Start here.** The intended product domain extracted from the Figma design: entity catalogue, column-by-column spec, endpoints, enums, seed data, pending decisions, Jira-sized migration roadmap. |
+| `MIGRATIONS.md` | Flyway rules and which `V<n>` are applied. |
+| `DIAGRAMS.md` | Class/architecture/package diagrams of the **current** code state. |
+
+> `DOMAIN-MODEL.md` is the source of truth for *what to build*; the code is the source of truth for *what exists*. When they disagree, the code wins and the doc gets corrected.
+>
+> **Work is delivered one Jira ticket at a time** — there is no "big-bang" migration. Before starting a ticket, read the relevant section of `DOMAIN-MODEL.md` (it also lists the open decisions `D-1`..`D-16` that may block the work).
+>
+> The Figma prototype folder `CRUD and Login for NetPay Manager/` is a **disposable reference**. `DOMAIN-MODEL.md` was written so it can be deleted without losing backend context. Do not add code that depends on reading it.
+
 ## Architecture
 
 Clean-layered architecture. Dependency rule: **infrastructure → application → domain**. The `domain` layer must never depend on `application` or `infrastructure`.
@@ -53,7 +67,10 @@ Source root: `src/main/java/com/navi/net_pay_backend/`
 
 ### Key rules
 
-- **Never expose internal DB IDs** (`id`, BIGSERIAL). Use `hashId` (public UUID string) in URLs and responses.
+- **Never expose internal DB IDs** (`id`, BIGSERIAL). Use `hashId` (public UUID string) in URLs and responses. No `code`/business-code columns: `hashId` is the only public identifier.
+- Controllers return `*ResponseDto` only — never the domain entity, and never `@RequestBody` a domain entity for writes; use `*RequestDto` → `application/model/*Request`.
+- Requests, query params and paths carry an `adm_typology` **`internal_id`** (e.g. `71` = Residential), never the `typology_id` (30071). The persistence layer resolves it. See `DOMAIN-MODEL.md` §0.3.
+- **No new `adm_typology` values** without an explicit ticket; a retired plan uses `INACTIVE`, not a custom "discontinued" status. See `DOMAIN-MODEL.md` §0.2.
 - Domain entities must stay free of Spring/JPA annotations; those belong in `*Entity` infrastructure classes. `Db*Repository` maps between them.
 - Keep controller and use-case code thin: no SQL/query logic in controllers.
 - Use typed domain exceptions for error flow (see Error handling).
