@@ -5,9 +5,10 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 @Getter
-@Builder
+@Builder(toBuilder = true)
 @AllArgsConstructor @ToString
 public class AppPayment {
     private Long id;
@@ -19,7 +20,9 @@ public class AppPayment {
     private AppUser collector;
     private AdmTypology tpPaymentMethod;
     private AdmTypology tpPaymentStatus;
+    private String reference;
     private String comment;
+    private List<PaymentAllocation> allocations;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private LocalDateTime deletedAt;

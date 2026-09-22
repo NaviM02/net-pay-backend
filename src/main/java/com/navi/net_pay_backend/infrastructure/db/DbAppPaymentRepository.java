@@ -24,6 +24,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,6 +121,12 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
     }
 
     @Override
+    public BigDecimal sumAmountByClientId(Long clientId, Long excludeStatusId) {
+        BigDecimal sum = repository.sumAmountByClientId(clientId, excludeStatusId);
+        return sum != null ? sum : BigDecimal.ZERO;
+    }
+
+    @Override
     public AppPayment save(AppPayment payment) {
         AppPaymentEntity entity = payment.getId() != null
                 ? repository.findById(payment.getId()).orElseGet(AppPaymentEntity::new)
@@ -128,6 +135,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
         entity.setHashId(payment.getHashId());
         entity.setAmount(payment.getAmount());
         entity.setPaidAt(payment.getPaidAt());
+        entity.setReference(payment.getReference());
         entity.setComment(payment.getComment());
         entity.setDeletedAt(payment.getDeletedAt());
 
@@ -178,6 +186,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 .hashId(entity.getHashId())
                 .amount(entity.getAmount())
                 .paidAt(entity.getPaidAt())
+                .reference(entity.getReference())
                 .comment(entity.getComment())
                 .client(toDomain(entity.getClient()))
                 .service(toDomain(entity.getService()))

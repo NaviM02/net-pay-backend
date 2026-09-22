@@ -6,19 +6,27 @@ import com.navi.net_pay_backend.domain.entity.AdmTypology;
 import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppPayment;
 import com.navi.net_pay_backend.domain.entity.AppUser;
+import com.navi.net_pay_backend.domain.entity.ClientCharge;
+import com.navi.net_pay_backend.domain.entity.PaymentAllocation;
 import com.navi.net_pay_backend.domain.enums.TypologyEnum;
 import com.navi.net_pay_backend.domain.exception.DomainException;
 import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppClientRepository;
 import com.navi.net_pay_backend.domain.repository.AppPaymentRepository;
 import com.navi.net_pay_backend.domain.repository.AppUserRepository;
+import com.navi.net_pay_backend.domain.repository.PaymentAllocationRepository;
+import com.navi.net_pay_backend.domain.service.AuditLogService;
 import com.navi.net_pay_backend.domain.service.SecurityContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Service
@@ -30,11 +38,15 @@ public class AppPaymentUseCase {
     private final AppPaymentRepository paymentRepository;
     private final AppClientRepository clientRepository;
     private final AppUserRepository userRepository;
+    private final PaymentAllocationRepository allocationRepository;
+    private final ClientChargeGenerator chargeGenerator;
+    private final AuditLogService auditLogService;
     private final SecurityContext securityContext;
 
     public AppPayment findByHashId(String hashId) {
-        return paymentRepository.findByHashIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
+        AppPayment payment = paymentRepository.findByHashIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new EntityNotFoundException("payment_not_found"));
+        return withAllocations(payment);
     }
 
     public PaginatedResult<AppPayment> findAll(AppPaymentQueryDto queryDto) {
@@ -42,25 +54,33 @@ public class AppPaymentUseCase {
         return paymentRepository.findAll(queryDto);
     }
 
+    @Transactional
     public AppPayment create(AppPayment payment) {
         AppClient client = resolveClient(payment);
         validatePayment(payment);
         AppUser collector = resolveCollector(payment.getCollector());
 
-        return paymentRepository.save(buildNewPayment(payment, client, collector));
+        AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
+        applyLedger(client, saved);
+        auditLogService.record("payment_created", "Registró pago", "PAYMENT", saved.getHashId(), after(saved));
+        return withAllocations(saved);
     }
 
+    @Transactional
     public AppPayment createAsCollector(AppPayment payment) {
         AppClient client = resolveClient(payment);
         validatePayment(payment);
         AppUser collector = currentCollector();
 
-        return paymentRepository.save(buildNewPayment(payment, client, collector));
+        AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
+        applyLedger(client, saved);
+        auditLogService.record("payment_created", "Registró pago", "PAYMENT", saved.getHashId(), after(saved));
+        return withAllocations(saved);
     }
 
+    @Transactional
     public AppPayment update(String hashId, AppPayment payment) {
         AppPayment existing = findByHashId(hashId);
-        validatePayment(payment);
 
         AppClient client = payment.getClient() != null && payment.getClient().getId() != null
                 ? resolveClient(payment)
@@ -77,7 +97,15 @@ public class AppPaymentUseCase {
         BigDecimal amount = payment.getAmount() != null ? payment.getAmount() : existing.getAmount();
         LocalDate paidAt = payment.getPaidAt() != null ? payment.getPaidAt() : existing.getPaidAt();
 
-        return paymentRepository.save(AppPayment.builder()
+        validatePayment(AppPayment.builder()
+                .amount(amount)
+                .paidAt(paidAt)
+                .tpPaymentMethod(method)
+                .build());
+
+        allocationRepository.deleteByPaymentId(existing.getId());
+
+        AppPayment updated = paymentRepository.save(AppPayment.builder()
                 .id(existing.getId())
                 .hashId(existing.getHashId())
                 .client(client)
@@ -87,14 +115,23 @@ public class AppPaymentUseCase {
                 .collector(collector)
                 .tpPaymentMethod(method)
                 .tpPaymentStatus(status)
+                .reference(trimToNull(payment.getReference()))
                 .comment(trimToNull(payment.getComment()))
                 .createdAt(existing.getCreatedAt())
                 .build()
         );
+
+        applyLedger(client, updated);
+        auditLogService.record("payment_updated", "Modificó pago", "PAYMENT", updated.getHashId(),
+                diff(existing, updated));
+        return withAllocations(updated);
     }
 
+    @Transactional
     public void delete(String hashId) {
         AppPayment existing = findByHashId(hashId);
+
+        allocationRepository.deleteByPaymentId(existing.getId());
 
         paymentRepository.save(AppPayment.builder()
                 .id(existing.getId())
@@ -106,12 +143,58 @@ public class AppPaymentUseCase {
                 .collector(existing.getCollector())
                 .tpPaymentMethod(existing.getTpPaymentMethod())
                 .tpPaymentStatus(AdmTypology.builder().internalId(TypologyEnum.DELETED.getId()).build())
+                .reference(existing.getReference())
                 .comment(existing.getComment())
                 .createdAt(existing.getCreatedAt())
                 .deletedAt(LocalDateTime.now())
                 .build()
         );
+
+        auditLogService.record("payment_deleted", "Anuló pago", "PAYMENT", existing.getHashId(), before(existing));
     }
+
+    // ── Ledger ──────────────────────────────────────────────────────────────
+
+    private void applyLedger(AppClient client, AppPayment payment) {
+        if (payment.getAmount() == null || payment.getAmount().signum() <= 0) {
+            return;
+        }
+
+        LocalDate paidAt = payment.getPaidAt() != null ? payment.getPaidAt() : LocalDate.now();
+        List<ClientCharge> charges = chargeGenerator.ensureUpTo(client, paidAt);
+
+        BigDecimal remaining = payment.getAmount();
+        for (ClientCharge charge : charges) {
+            if (remaining.signum() <= 0) {
+                break;
+            }
+            remaining = allocate(payment, charge, remaining);
+        }
+        // Si sobra (remaining > 0) queda como saldo a favor del cliente; no se generan meses futuros.
+    }
+
+    private BigDecimal allocate(AppPayment payment, ClientCharge charge, BigDecimal remaining) {
+        BigDecimal allocated = allocationRepository.sumAmountByChargeId(charge.getId());
+        BigDecimal due = charge.getExpectedAmount().subtract(allocated);
+        if (due.signum() <= 0) {
+            return remaining;
+        }
+        BigDecimal apply = remaining.min(due);
+        allocationRepository.save(PaymentAllocation.builder()
+                .payment(AppPayment.builder().id(payment.getId()).build())
+                .charge(charge)
+                .amount(apply)
+                .build());
+        return remaining.subtract(apply);
+    }
+
+    private AppPayment withAllocations(AppPayment payment) {
+        return payment.toBuilder()
+                .allocations(allocationRepository.findByPaymentId(payment.getId()))
+                .build();
+    }
+
+    // ── Build / resolve ─────────────────────────────────────────────────────
 
     private AppPayment buildNewPayment(AppPayment payment, AppClient client, AppUser collector) {
         return AppPayment.builder()
@@ -123,6 +206,7 @@ public class AppPaymentUseCase {
                 .collector(collector)
                 .tpPaymentMethod(payment.getTpPaymentMethod())
                 .tpPaymentStatus(resolveStatus(payment.getTpPaymentStatus()))
+                .reference(trimToNull(payment.getReference()))
                 .comment(trimToNull(payment.getComment()))
                 .build();
     }
@@ -157,7 +241,7 @@ public class AppPaymentUseCase {
         if (payment.getAmount() == null) {
             throw new DomainException("payment_amount_required");
         }
-        if (payment.getAmount().compareTo(ZERO) < 0) {
+        if (payment.getAmount().compareTo(ZERO) <= 0) {
             throw new DomainException("payment_amount_invalid");
         }
         if (payment.getPaidAt() == null) {
@@ -185,6 +269,36 @@ public class AppPaymentUseCase {
     private boolean hasTypologyKey(AdmTypology typology) {
         return typology != null
                 && (typology.getInternalId() != null || typology.getTypologyId() != null);
+    }
+
+    private Map<String, Object> snapshot(AppPayment payment) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("amount", payment.getAmount());
+        map.put("paidAt", payment.getPaidAt() != null ? payment.getPaidAt().toString() : null);
+        map.put("reference", payment.getReference());
+        map.put("comment", payment.getComment());
+        map.put("status", payment.getTpPaymentStatus() != null ? payment.getTpPaymentStatus().getInternalId() : null);
+        map.put("method", payment.getTpPaymentMethod() != null ? payment.getTpPaymentMethod().getInternalId() : null);
+        return map;
+    }
+
+    private Map<String, Object> before(AppPayment payment) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("before", snapshot(payment));
+        return map;
+    }
+
+    private Map<String, Object> after(AppPayment payment) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("after", snapshot(payment));
+        return map;
+    }
+
+    private Map<String, Object> diff(AppPayment before, AppPayment after) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("before", snapshot(before));
+        map.put("after", snapshot(after));
+        return map;
     }
 
     private String trimToNull(String value) {
