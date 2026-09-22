@@ -1,0 +1,117 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <title>{{title}}</title>
+    <style>
+        @page {
+            size: A4 landscape;
+            margin: 36px 40px;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Carlito", sans-serif;
+            color: #1f2937;
+            font-size: 11px;
+            margin: 0;
+        }
+        .header {
+            width: 100%;
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 12px;
+            margin-bottom: 18px;
+        }
+        .header td {
+            vertical-align: middle;
+        }
+        .brand {
+            font-size: 22px;
+            font-weight: bold;
+            color: #4f46e5;
+            letter-spacing: 2px;
+        }
+        .brand-sub {
+            color: #6b7280;
+            font-size: 10px;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .doc-title {
+            text-align: right;
+        }
+        .doc-title .label {
+            font-size: 17px;
+            font-weight: bold;
+            color: #111827;
+        }
+        .doc-title .sub {
+            font-size: 11px;
+            color: #6b7280;
+            margin-top: 4px;
+        }
+        table.report {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        table.report thead th {
+            background: #4f46e5;
+            color: #ffffff;
+            font-size: 10px;
+            text-align: left;
+            padding: 9px 10px;
+            border: 1px solid #4f46e5;
+        }
+        table.report thead th.right {
+            text-align: right;
+        }
+        table.report tbody td {
+            padding: 8px 10px;
+            border: 1px solid #e5e7eb;
+            color: #111827;
+        }
+        table.report tbody tr:nth-child(even) td {
+            background: #f9fafb;
+        }
+        table.report tbody td.right {
+            text-align: right;
+        }
+        table.report tbody td.empty {
+            text-align: center;
+            color: #6b7280;
+            padding: 18px;
+        }
+        .footer {
+            margin-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 10px;
+            color: #9ca3af;
+            font-size: 9px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td>
+            <div class="brand">GRAVITY</div>
+            <div class="brand-sub">SERVICIOS DE INTERNET &amp; TELECOMUNICACIONES</div>
+        </td>
+        <td class="doc-title">
+            <div class="label">{{title}}</div>
+            <div class="sub">{{subtitle}}</div>
+        </td>
+    </tr>
+</table>
+
+{{table}}
+
+<div class="footer">
+    Reporte generado el {{generatedAt}} — GRAVITY.
+</div>
+
+</body>
+</html>
