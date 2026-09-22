@@ -22,7 +22,7 @@ public class LoginUseCase {
                 .findByEmailAndStatus(request.getEmail(), TypologyEnum.ACTIVE.getId())
                 .orElseThrow(() -> new InvalidCredentialsException("invalid_email"));
 
-        if (!passwordHashService.compare(request.getPassword(), user.getPasswordHash())) {
+        if (!passwordHashService.compare(request.getPassword(), user.getPassword())) {
             throw new InvalidCredentialsException("wrong_password");
         }
 

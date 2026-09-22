@@ -16,7 +16,6 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
-@CrossOrigin(origins = "http://localhost:4200")
 public class AppUserController {
 
     private final AppUserUseCase userUseCase;
@@ -26,7 +25,7 @@ public class AppUserController {
     public ResponseEntity<AppUser> findMe() {
         return ResponseEntity.ok(userUseCase.findMe());
     }
-
+    
     @GetMapping("/{hashId}")
     public ResponseEntity<AppUser> findByHashId(@PathVariable String hashId) {
         return ResponseEntity.ok(userUseCase.findByHashId(hashId));
@@ -51,7 +50,7 @@ public class AppUserController {
 
     @DeleteMapping("/{hashId}")
     public ResponseEntity<Void> delete(@PathVariable String hashId) {
-        userUseCase.deleteLogically(hashId);
+        userUseCase.delete(hashId);
         return ResponseEntity.noContent().build();
     }
 }
