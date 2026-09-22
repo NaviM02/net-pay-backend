@@ -1,9 +1,13 @@
 package com.navi.net_pay_backend.infrastructure.http.controller;
 
+import com.navi.net_pay_backend.application.use_case.AppClientUseCase;
 import com.navi.net_pay_backend.application.use_case.AppUserUseCase;
+import com.navi.net_pay_backend.domain.dto.AppClientQueryDto;
 import com.navi.net_pay_backend.domain.dto.AppUserQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
+import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppUser;
+import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
@@ -19,11 +23,24 @@ import java.util.List;
 public class AppUserController {
 
     private final AppUserUseCase userUseCase;
+    private final AppClientUseCase clientUseCase;
     private final HttpMapper httpMapper;
 
     @GetMapping("/me")
     public ResponseEntity<AppUserResponseDto> findMe() {
         return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.findMe()));
+    }
+
+    @GetMapping("/{hashId}/clients")
+    public ResponseEntity<List<AppClientResponseDto>> findClients(
+            @PathVariable String hashId,
+            @ModelAttribute AppClientQueryDto queryDto
+    ) {
+        PaginatedResult<AppClient> result = clientUseCase.findByCollectorHashId(hashId, queryDto);
+        List<AppClientResponseDto> clientRes = result.getItems().stream()
+                .map(httpMapper::toAppClientResponse)
+                .toList();
+        return ResponseEntity.ok().header("X-Total-Count", String.valueOf(result.getTotal())).body(clientRes);
     }
 
     @GetMapping("/{hashId}")
