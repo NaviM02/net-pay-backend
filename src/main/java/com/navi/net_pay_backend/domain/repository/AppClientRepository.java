@@ -7,6 +7,8 @@ import com.navi.net_pay_backend.domain.entity.AppClient;
 import java.util.Optional;
 
 public interface AppClientRepository {
+    Optional<AppClient> findByIdAndStatusNot(Long id, Long statusId);
+
     Optional<AppClient> findByHashIdAndStatusNot(String hashId, Long statusId);
 
     PaginatedResult<AppClient> findAll(AppClientQueryDto queryDto);

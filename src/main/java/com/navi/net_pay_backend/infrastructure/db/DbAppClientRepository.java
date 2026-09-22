@@ -37,6 +37,11 @@ public class DbAppClientRepository implements AppClientRepository {
     private final AdmTypologyJpaRepository typologyRepository;
 
     @Override
+    public Optional<AppClient> findByIdAndStatusNot(Long id, Long statusId) {
+        return repository.findByIdAndTpStatusInternalIdNot(id, statusId).map(this::toDomain);
+    }
+
+    @Override
     public Optional<AppClient> findByHashIdAndStatusNot(String hashId, Long statusId) {
         return repository.findByHashIdAndTpStatusInternalIdNot(hashId, statusId).map(this::toDomain);
     }

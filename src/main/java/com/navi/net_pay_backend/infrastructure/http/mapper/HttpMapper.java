@@ -1,9 +1,11 @@
 package com.navi.net_pay_backend.infrastructure.http.mapper;
 
 import com.navi.net_pay_backend.domain.entity.AppClient;
+import com.navi.net_pay_backend.domain.entity.AppPayment;
 import com.navi.net_pay_backend.domain.entity.AppService;
 import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppServiceResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
 import org.springframework.stereotype.Service;
@@ -55,6 +57,23 @@ public class HttpMapper {
                 .collector(client.getCollector() != null ? toAppUserResponse(client.getCollector()) : null)
                 .createdAt(client.getCreatedAt())
                 .updatedAt(client.getUpdatedAt())
+                .build();
+    }
+
+    public AppPaymentResponseDto toAppPaymentResponse(AppPayment payment) {
+        return AppPaymentResponseDto.builder()
+                .id(payment.getId())
+                .hashId(payment.getHashId())
+                .client(payment.getClient() != null ? toAppClientResponse(payment.getClient()) : null)
+                .service(payment.getService() != null ? toAppServiceResponse(payment.getService()) : null)
+                .amount(payment.getAmount())
+                .paidAt(payment.getPaidAt())
+                .collector(payment.getCollector() != null ? toAppUserResponse(payment.getCollector()) : null)
+                .tpPaymentMethod(payment.getTpPaymentMethod())
+                .tpPaymentStatus(payment.getTpPaymentStatus())
+                .comment(payment.getComment())
+                .createdAt(payment.getCreatedAt())
+                .updatedAt(payment.getUpdatedAt())
                 .build();
     }
 }
