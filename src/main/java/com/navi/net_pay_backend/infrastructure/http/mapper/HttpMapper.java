@@ -7,6 +7,7 @@ import com.navi.net_pay_backend.domain.entity.AppPayment;
 import com.navi.net_pay_backend.domain.entity.AppService;
 import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.domain.entity.PaymentAllocation;
+import com.navi.net_pay_backend.domain.entity.Receipt;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentAllocationDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentResponseDto;
@@ -14,6 +15,7 @@ import com.navi.net_pay_backend.infrastructure.http.dto.AppServiceResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ClientAccountResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ClientChargeResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ReceiptResponseDto;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -100,6 +102,22 @@ public class HttpMapper {
                 .periodLabel(allocation.getCharge() != null && allocation.getCharge().getPeriod() != null
                         ? allocation.getCharge().getPeriod().getLabel() : null)
                 .amount(allocation.getAmount())
+                .build();
+    }
+
+    public ReceiptResponseDto toReceiptResponse(Receipt receipt) {
+        return ReceiptResponseDto.builder()
+                .hashId(receipt.getHashId())
+                .receiptNumber(receipt.getReceiptNumber())
+                .paymentHashId(receipt.getPayment() != null ? receipt.getPayment().getHashId() : null)
+                .clientHashId(receipt.getClient() != null ? receipt.getClient().getHashId() : null)
+                .clientName(receipt.getClient() != null ? receipt.getClient().getBusinessName() : null)
+                .periodLabel(receipt.getPeriod() != null ? receipt.getPeriod().getLabel() : null)
+                .amount(receipt.getAmount())
+                .issuedAt(receipt.getIssuedAt())
+                .collectorName(receipt.getCollector() != null ? receipt.getCollector().getFullName() : null)
+                .documentPath(receipt.getDocumentPath())
+                .printedAt(receipt.getPrintedAt())
                 .build();
     }
 
