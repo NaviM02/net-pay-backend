@@ -22,13 +22,13 @@ public class AppUserController {
     private final HttpMapper httpMapper;
 
     @GetMapping("/me")
-    public ResponseEntity<AppUser> findMe() {
-        return ResponseEntity.ok(userUseCase.findMe());
+    public ResponseEntity<AppUserResponseDto> findMe() {
+        return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.findMe()));
     }
-    
+
     @GetMapping("/{hashId}")
-    public ResponseEntity<AppUser> findByHashId(@PathVariable String hashId) {
-        return ResponseEntity.ok(userUseCase.findByHashId(hashId));
+    public ResponseEntity<AppUserResponseDto> findByHashId(@PathVariable String hashId) {
+        return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.findByHashId(hashId)));
     }
 
     @GetMapping
@@ -39,13 +39,13 @@ public class AppUserController {
     }
 
     @PostMapping
-    public ResponseEntity<AppUser> create(@RequestBody AppUser user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userUseCase.create(user));
+    public ResponseEntity<AppUserResponseDto> create(@RequestBody AppUser user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(httpMapper.toAppUserResponse(userUseCase.create(user)));
     }
 
     @PutMapping("/{hashId}")
-    public ResponseEntity<AppUser> update(@PathVariable String hashId, @RequestBody AppUser user) {
-        return ResponseEntity.ok(userUseCase.update(hashId, user));
+    public ResponseEntity<AppUserResponseDto> update(@PathVariable String hashId, @RequestBody AppUser user) {
+        return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.update(hashId, user)));
     }
 
     @DeleteMapping("/{hashId}")
