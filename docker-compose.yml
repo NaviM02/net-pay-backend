@@ -1,0 +1,57 @@
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: netpay-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-netpay_db}
+      POSTGRES_USER: ${DB_USERNAME:-netpay}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el archivo .env}
+    volumes:
+      - netpay-db-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-netpay} -d ${POSTGRES_DB:-netpay_db}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    # Descomenta solo si necesitas conectarte a la BD desde fuera de Docker
+    # ports:
+    #   - "5432:5432"
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: netpay-api
+    restart: unless-stopped
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      # Base de datos (apunta al servicio "db" dentro de la red de Docker)
+      DB_URL: jdbc:postgresql://db:5432/${POSTGRES_DB:-netpay_db}
+      DB_USERNAME: ${DB_USERNAME:-netpay}
+      DB_PASSWORD: ${DB_PASSWORD:?define DB_PASSWORD en el archivo .env}
+      # Auth
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-3600}
+      JWT_SECRET: ${JWT_SECRET:?define JWT_SECRET en el archivo .env}
+      # Cloudinary
+      CLOUDINARY_CLOUD_NAME: ${CLOUDINARY_CLOUD_NAME:-}
+      CLOUDINARY_API_KEY: ${CLOUDINARY_API_KEY:-}
+      CLOUDINARY_API_SECRET: ${CLOUDINARY_API_SECRET:-}
+      CLOUDINARY_FOLDER: ${CLOUDINARY_FOLDER:-netpay/receipts}
+      # Gmail API
+      GMAIL_CLIENT_ID: ${GMAIL_CLIENT_ID:-}
+      GMAIL_CLIENT_SECRET: ${GMAIL_CLIENT_SECRET:-}
+      GMAIL_REFRESH_TOKEN: ${GMAIL_REFRESH_TOKEN:-}
+      GMAIL_FROM_EMAIL: ${GMAIL_FROM_EMAIL:-}
+      # Recuperacion de contrasena
+      PASSWORD_RESET_EXPIRATION_MINUTES: ${PASSWORD_RESET_EXPIRATION_MINUTES:-30}
+      FRONTEND_BASE_URL: ${FRONTEND_BASE_URL:-http://localhost:4200}
+      # CORS
+      CORS_ALLOWED_ORIGINS: ${CORS_ALLOWED_ORIGINS:-http://localhost:4200}
+    ports:
+      - "${API_PORT:-8080}:8080"
+
+volumes:
+  netpay-db-data:
