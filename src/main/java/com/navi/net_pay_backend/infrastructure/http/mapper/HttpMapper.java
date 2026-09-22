@@ -3,6 +3,8 @@ package com.navi.net_pay_backend.infrastructure.http.mapper;
 import com.navi.net_pay_backend.domain.dto.ClientAccountView;
 import com.navi.net_pay_backend.domain.dto.ClientChargeView;
 import com.navi.net_pay_backend.domain.entity.AppClient;
+import com.navi.net_pay_backend.domain.entity.AuditLog;
+import com.navi.net_pay_backend.domain.enums.TypologyEnum;
 import com.navi.net_pay_backend.domain.entity.AppPayment;
 import com.navi.net_pay_backend.domain.entity.AppService;
 import com.navi.net_pay_backend.domain.entity.AppUser;
@@ -13,6 +15,7 @@ import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentAllocationDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppServiceResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.AuditLogResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ClientAccountResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ClientChargeResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ReceiptResponseDto;
@@ -102,6 +105,24 @@ public class HttpMapper {
                 .periodLabel(allocation.getCharge() != null && allocation.getCharge().getPeriod() != null
                         ? allocation.getCharge().getPeriod().getLabel() : null)
                 .amount(allocation.getAmount())
+                .build();
+    }
+
+    public AuditLogResponseDto toAuditLogResponse(AuditLog log) {
+        TypologyEnum level = log.getLevelId() != null ? TypologyEnum.findById(log.getLevelId()) : null;
+        return AuditLogResponseDto.builder()
+                .id(log.getId())
+                .userId(log.getUserId())
+                .userEmail(log.getUserEmail())
+                .action(log.getAction())
+                .detail(log.getDetail())
+                .entityType(log.getEntityType())
+                .entityHashId(log.getEntityHashId())
+                .changes(log.getChanges())
+                .ipAddress(log.getIpAddress())
+                .level(log.getLevelId())
+                .levelName(level != null ? level.name() : null)
+                .createdAt(log.getCreatedAt())
                 .build();
     }
 

@@ -24,6 +24,7 @@ import java.util.*;
 public class DbAppUserRepository implements AppUserRepository {
 
     private final AppUserJpaRepository repository;
+    private final AdmTypologyJpaRepository typologyRepository;
 
     @Override
     public Optional<AppUser> findByEmailAndStatus(String email, Long statusId) {
@@ -117,12 +118,11 @@ public class DbAppUserRepository implements AppUserRepository {
         entity.setEmail(user.getEmail());
         entity.setPassword(user.getPassword());
 
-        // Asignamos las referencias lógicas mediante IDs simulando el comportamiento sin constraints
         if (user.getTpStatus() != null) {
-            entity.setTpStatus(AdmTypologyEntity.builder().typologyId(user.getTpStatus().getTypologyId()).build());
+            entity.setTpStatus(resolveTypology(user.getTpStatus()));
         }
         if (user.getTpRole() != null) {
-            entity.setTpRole(AdmTypologyEntity.builder().typologyId(user.getTpRole().getTypologyId()).build());
+            entity.setTpRole(resolveTypology(user.getTpRole()));
         }
 
         if (user.getId() == null) {
@@ -132,6 +132,14 @@ public class DbAppUserRepository implements AppUserRepository {
 
         AppUserEntity savedEntity = repository.save(entity);
         return toDomain(savedEntity);
+    }
+
+    private AdmTypologyEntity resolveTypology(AdmTypology typology) {
+        if (typology.getInternalId() != null) {
+            return typologyRepository.findByInternalId(typology.getInternalId())
+                    .orElseThrow(() -> new com.navi.net_pay_backend.domain.exception.EntityNotFoundException("typology_not_found"));
+        }
+        return typologyRepository.getReferenceById(typology.getTypologyId());
     }
 
     private AppUser toDomain(AppUserEntity entity) {
