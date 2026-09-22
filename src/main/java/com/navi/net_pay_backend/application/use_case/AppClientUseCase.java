@@ -37,6 +37,15 @@ public class AppClientUseCase {
         return clientRepository.findAll(queryDto);
     }
 
+    public PaginatedResult<AppClient> findByCollectorHashId(String collectorHashId, AppClientQueryDto queryDto) {
+        AppUser collector = userRepository.findByPublicIdAndStatusNot(collectorHashId, TypologyEnum.DELETED.getId())
+                .orElseThrow(() -> new EntityNotFoundException("user_not_found"));
+
+        queryDto.setCollectorId(collector.getId());
+        queryDto.setExcludeStatus(TypologyEnum.DELETED.getId());
+        return clientRepository.findAll(queryDto);
+    }
+
     public AppClient create(AppClient client) {
         validateRequiredFields(client);
 
