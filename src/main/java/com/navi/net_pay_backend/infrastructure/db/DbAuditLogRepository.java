@@ -4,7 +4,6 @@ import com.navi.net_pay_backend.domain.dto.AuditLogQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.entity.AuditLog;
 import com.navi.net_pay_backend.domain.repository.AuditLogRepository;
-import com.navi.net_pay_backend.infrastructure.db.entity.AdmTypologyEntity;
 import com.navi.net_pay_backend.infrastructure.db.entity.AuditLogEntity;
 import jakarta.persistence.criteria.Predicate;
 import lombok.RequiredArgsConstructor;
@@ -68,12 +67,12 @@ public class DbAuditLogRepository implements AuditLogRepository {
                 predicates.add(cb.equal(root.get("userId"), queryDto.getUserId()));
             }
 
-            if (queryDto.getDateFrom() != null) {
-                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), queryDto.getDateFrom().atStartOfDay()));
+            if (queryDto.getFromDate() != null) {
+                predicates.add(cb.greaterThanOrEqualTo(root.get("createdAt"), queryDto.getFromDate()));
             }
 
-            if (queryDto.getDateTo() != null) {
-                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), queryDto.getDateTo().atTime(23, 59, 59)));
+            if (queryDto.getToDate() != null) {
+                predicates.add(cb.lessThanOrEqualTo(root.get("createdAt"), queryDto.getToDate()));
             }
 
             return cb.and(predicates.toArray(new Predicate[0]));

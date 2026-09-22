@@ -71,6 +71,14 @@ public class DbAppUserRepository implements AppUserRepository {
                 ));
             }
 
+            if (queryDto.getStatus() != null) {
+                predicates.add(cb.equal(root.get("tpStatus").get("internalId"), queryDto.getStatus()));
+            }
+
+            if (queryDto.getExcludeStatus() != null) {
+                predicates.add(cb.notEqual(root.get("tpStatus").get("internalId"), queryDto.getExcludeStatus()));
+            }
+
             return cb.and(predicates.toArray(new Predicate[0]));
         };
 

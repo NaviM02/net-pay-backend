@@ -2,6 +2,17 @@ package com.navi.net_pay_backend.infrastructure.http.mapper;
 
 import com.navi.net_pay_backend.domain.dto.ClientAccountView;
 import com.navi.net_pay_backend.domain.dto.ClientChargeView;
+import com.navi.net_pay_backend.domain.dto.CollectionReportView;
+import com.navi.net_pay_backend.domain.dto.CollectionSummary;
+import com.navi.net_pay_backend.domain.dto.CollectorCollection;
+import com.navi.net_pay_backend.domain.dto.CollectorDashboardSummary;
+import com.navi.net_pay_backend.domain.dto.CollectorDashboardView;
+import com.navi.net_pay_backend.domain.dto.DashboardSummary;
+import com.navi.net_pay_backend.domain.dto.DashboardView;
+import com.navi.net_pay_backend.domain.dto.MethodCollection;
+import com.navi.net_pay_backend.domain.dto.MonthlyMethodCollection;
+import com.navi.net_pay_backend.domain.dto.OverdueClientView;
+import com.navi.net_pay_backend.domain.dto.PlanClientCount;
 import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AuditLog;
 import com.navi.net_pay_backend.domain.enums.TypologyEnum;
@@ -18,6 +29,17 @@ import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AuditLogResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ClientAccountResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ClientChargeResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.CollectionReportResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.CollectionSummaryDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.CollectorCollectionDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.CollectorDashboardResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.CollectorDashboardSummaryDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.DashboardResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.DashboardSummaryDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.MethodCollectionDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.MonthlyMethodCollectionDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.OverdueClientResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.PlanClientCountDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ReceiptResponseDto;
 import org.springframework.stereotype.Service;
 
@@ -168,6 +190,146 @@ public class HttpMapper {
                 .credit(account.getCredit())
                 .overdueCount(account.getOverdueCount())
                 .charges(charges)
+                .build();
+    }
+
+    public CollectionSummaryDto toCollectionSummaryDto(CollectionSummary summary) {
+        return CollectionSummaryDto.builder()
+                .totalCollected(summary.getTotalCollected())
+                .completedCount(summary.getCompletedCount())
+                .failedCount(summary.getFailedCount())
+                .pendingCount(summary.getPendingCount())
+                .successRate(summary.getSuccessRate())
+                .build();
+    }
+
+    public CollectorCollectionDto toCollectorCollectionDto(CollectorCollection item) {
+        return CollectorCollectionDto.builder()
+                .collectorHashId(item.getCollectorHashId())
+                .collectorName(item.getCollectorName())
+                .totalCollected(item.getTotalCollected())
+                .paymentCount(item.getPaymentCount())
+                .build();
+    }
+
+    public CollectionReportResponseDto toCollectionReportResponse(CollectionReportView view) {
+        return CollectionReportResponseDto.builder()
+                .fromDate(view.getFromDate())
+                .toDate(view.getToDate())
+                .summary(toCollectionSummaryDto(view.getSummary()))
+                .byCollector(view.getByCollector() != null
+                        ? view.getByCollector().stream().map(this::toCollectorCollectionDto).toList()
+                        : List.of())
+                .build();
+    }
+
+    public OverdueClientResponseDto toOverdueClientResponse(OverdueClientView view) {
+        return OverdueClientResponseDto.builder()
+                .clientHashId(view.getClientHashId())
+                .businessName(view.getBusinessName())
+                .contactName(view.getContactName())
+                .contactEmail(view.getContactEmail())
+                .contactPhone(view.getContactPhone())
+                .serviceHashId(view.getServiceHashId())
+                .planName(view.getPlanName())
+                .statusId(view.getStatusId())
+                .statusCode(view.getStatusCode())
+                .statusDescription(view.getStatusDescription())
+                .overdueMonths(view.getOverdueMonths())
+                .totalDebt(view.getTotalDebt())
+                .overduePeriods(view.getOverduePeriods())
+                .build();
+    }
+
+    public DashboardSummaryDto toDashboardSummaryDto(DashboardSummary summary) {
+        return DashboardSummaryDto.builder()
+                .activeClients(summary.getActiveClients())
+                .monthCollection(summary.getMonthCollection())
+                .overdueClients(summary.getOverdueClients())
+                .receiptsIssued(summary.getReceiptsIssued())
+                .year(summary.getYear())
+                .month(summary.getMonth())
+                .monthLabel(summary.getMonthLabel())
+                .build();
+    }
+
+    public PlanClientCountDto toPlanClientCountDto(PlanClientCount item) {
+        return PlanClientCountDto.builder()
+                .planHashId(item.getPlanHashId())
+                .planName(item.getPlanName())
+                .activeClients(item.getActiveClients())
+                .build();
+    }
+
+    public MethodCollectionDto toMethodCollectionDto(MethodCollection item) {
+        return MethodCollectionDto.builder()
+                .methodId(item.getMethodId())
+                .methodName(item.getMethodName())
+                .methodDescription(item.getMethodDescription())
+                .total(item.getTotal())
+                .count(item.getCount())
+                .build();
+    }
+
+    public MonthlyMethodCollectionDto toMonthlyMethodCollectionDto(MonthlyMethodCollection item) {
+        return MonthlyMethodCollectionDto.builder()
+                .year(item.getYear())
+                .month(item.getMonth())
+                .label(item.getLabel())
+                .methods(item.getMethods() != null
+                        ? item.getMethods().stream().map(this::toMethodCollectionDto).toList()
+                        : List.of())
+                .build();
+    }
+
+    public DashboardResponseDto toDashboardResponse(DashboardView view) {
+        return DashboardResponseDto.builder()
+                .summary(toDashboardSummaryDto(view.getSummary()))
+                .recentPayments(view.getRecentPayments() != null
+                        ? view.getRecentPayments().stream().map(this::toAppPaymentResponse).toList()
+                        : List.of())
+                .recentActivities(view.getRecentActivities() != null
+                        ? view.getRecentActivities().stream().map(this::toAuditLogResponse).toList()
+                        : List.of())
+                .clientsByPlan(view.getClientsByPlan() != null
+                        ? view.getClientsByPlan().stream().map(this::toPlanClientCountDto).toList()
+                        : List.of())
+                .collectionsByMethod(view.getCollectionsByMethod() != null
+                        ? view.getCollectionsByMethod().stream().map(this::toMethodCollectionDto).toList()
+                        : List.of())
+                .collectionsByMethodByMonth(view.getCollectionsByMethodByMonth() != null
+                        ? view.getCollectionsByMethodByMonth().stream().map(this::toMonthlyMethodCollectionDto).toList()
+                        : List.of())
+                .build();
+    }
+
+    public CollectorDashboardSummaryDto toCollectorDashboardSummaryDto(CollectorDashboardSummary summary) {
+        return CollectorDashboardSummaryDto.builder()
+                .assignedClients(summary.getAssignedClients())
+                .monthCollection(summary.getMonthCollection())
+                .overdueClients(summary.getOverdueClients())
+                .receiptsIssued(summary.getReceiptsIssued())
+                .year(summary.getYear())
+                .month(summary.getMonth())
+                .monthLabel(summary.getMonthLabel())
+                .build();
+    }
+
+    public CollectorDashboardResponseDto toCollectorDashboardResponse(CollectorDashboardView view) {
+        return CollectorDashboardResponseDto.builder()
+                .summary(toCollectorDashboardSummaryDto(view.getSummary()))
+                .recentPayments(view.getRecentPayments() != null
+                        ? view.getRecentPayments().stream().map(this::toAppPaymentResponse).toList()
+                        : List.of())
+                .overdueClients(view.getOverdueClients() != null
+                        ? view.getOverdueClients().stream().map(this::toOverdueClientResponse).toList()
+                        : List.of())
+                .collectionsByMethod(view.getCollectionsByMethod() != null
+                        ? view.getCollectionsByMethod().stream().map(this::toMethodCollectionDto).toList()
+                        : List.of())
+                .collectionsByMethodByMonth(view.getCollectionsByMethodByMonth() != null
+                        ? view.getCollectionsByMethodByMonth().stream().map(this::toMonthlyMethodCollectionDto).toList()
+                        : List.of())
                 .build();
     }
 }

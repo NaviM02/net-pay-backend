@@ -5,10 +5,15 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
 public interface AppClientJpaRepository extends JpaRepository<AppClientEntity, Long>, JpaSpecificationExecutor<AppClientEntity> {
+
+    List<AppClientEntity> findByTpStatusInternalIdNot(Long internalId);
+
+    List<AppClientEntity> findByCollectorIdAndTpStatusInternalIdNot(Long collectorId, Long internalId);
 
     Optional<AppClientEntity> findByIdAndTpStatusInternalIdNot(Long id, Long internalId);
 
