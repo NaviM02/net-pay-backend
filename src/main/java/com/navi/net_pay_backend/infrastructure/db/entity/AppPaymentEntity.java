@@ -50,6 +50,9 @@ public class AppPaymentEntity {
     @JoinColumn(name = "tp_payment_status", referencedColumnName = "typology_id", nullable = false)
     private AdmTypologyEntity tpPaymentStatus;
 
+    @Column(name = "reference", length = 255)
+    private String reference;
+
     @Column(name = "comment", length = 500)
     private String comment;
 

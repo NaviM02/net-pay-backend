@@ -1,14 +1,22 @@
 package com.navi.net_pay_backend.infrastructure.http.mapper;
 
+import com.navi.net_pay_backend.domain.dto.ClientAccountView;
+import com.navi.net_pay_backend.domain.dto.ClientChargeView;
 import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppPayment;
 import com.navi.net_pay_backend.domain.entity.AppService;
 import com.navi.net_pay_backend.domain.entity.AppUser;
+import com.navi.net_pay_backend.domain.entity.PaymentAllocation;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentAllocationDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppPaymentResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppServiceResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ClientAccountResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ClientChargeResponseDto;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 public class HttpMapper {
@@ -71,9 +79,56 @@ public class HttpMapper {
                 .collector(payment.getCollector() != null ? toAppUserResponse(payment.getCollector()) : null)
                 .tpPaymentMethod(payment.getTpPaymentMethod())
                 .tpPaymentStatus(payment.getTpPaymentStatus())
+                .reference(payment.getReference())
                 .comment(payment.getComment())
+                .allocations(payment.getAllocations() != null
+                        ? payment.getAllocations().stream().map(this::toAppPaymentAllocation).toList()
+                        : null)
                 .createdAt(payment.getCreatedAt())
                 .updatedAt(payment.getUpdatedAt())
+                .build();
+    }
+
+    public AppPaymentAllocationDto toAppPaymentAllocation(PaymentAllocation allocation) {
+        return AppPaymentAllocationDto.builder()
+                .id(allocation.getId())
+                .chargeHashId(allocation.getCharge() != null ? allocation.getCharge().getHashId() : null)
+                .year(allocation.getCharge() != null && allocation.getCharge().getPeriod() != null
+                        ? allocation.getCharge().getPeriod().getYear() : null)
+                .month(allocation.getCharge() != null && allocation.getCharge().getPeriod() != null
+                        ? allocation.getCharge().getPeriod().getMonth() : null)
+                .periodLabel(allocation.getCharge() != null && allocation.getCharge().getPeriod() != null
+                        ? allocation.getCharge().getPeriod().getLabel() : null)
+                .amount(allocation.getAmount())
+                .build();
+    }
+
+    public ClientChargeResponseDto toClientChargeResponse(ClientChargeView charge) {
+        return ClientChargeResponseDto.builder()
+                .hashId(charge.getHashId())
+                .year(charge.getYear())
+                .month(charge.getMonth())
+                .periodLabel(charge.getPeriodLabel())
+                .expectedAmount(charge.getExpectedAmount())
+                .paidAmount(charge.getPaidAmount())
+                .balance(charge.getBalance())
+                .status(charge.getStatus() != null ? charge.getStatus().name() : null)
+                .overdue(charge.isOverdue())
+                .build();
+    }
+
+    public ClientAccountResponseDto toClientAccountResponse(ClientAccountView account) {
+        List<ClientChargeResponseDto> charges = account.getCharges() != null
+                ? account.getCharges().stream().map(this::toClientChargeResponse).toList()
+                : List.of();
+        return ClientAccountResponseDto.builder()
+                .clientHashId(account.getClientHashId())
+                .totalExpected(account.getTotalExpected())
+                .totalPaid(account.getTotalPaid())
+                .balance(account.getBalance())
+                .credit(account.getCredit())
+                .overdueCount(account.getOverdueCount())
+                .charges(charges)
                 .build();
     }
 }
