@@ -73,68 +73,6 @@ public interface ReportJpaRepository extends JpaRepository<AppPaymentEntity, Lon
                                           @Param("limit") int limit);
 
     @Query(value = """
-            WITH paid AS (
-                SELECT pa.charge_id AS charge_id, SUM(pa.amount) AS paid_amount
-                FROM payment_allocation pa
-                JOIN payment p ON p.id = pa.payment_id
-                WHERE p.deleted_at IS NULL
-                GROUP BY pa.charge_id
-            )
-            SELECT c.hash_id, c.business_name, c.contact_name, c.contact_email, c.contact_phone,
-                   s.hash_id AS service_hash_id, s.name AS plan_name,
-                   tcs.internal_id AS status_id, tcs.value_1 AS status_code, tcs.description AS status_description,
-                   COUNT(cc.id) AS overdue_months,
-                   COALESCE(SUM(cc.expected_amount - COALESCE(paid.paid_amount, 0)), 0) AS total_debt,
-                   STRING_AGG(bp.year || '-' || LPAD(CAST(bp.month AS text), 2, '0'), ','
-                              ORDER BY bp.year, bp.month) AS periods
-            FROM client c
-            JOIN adm_typology tcs ON tcs.typology_id = c.tp_status
-            JOIN app_service s ON s.id = c.service_id
-            JOIN client_charge cc ON cc.client_id = c.id AND cc.deleted_at IS NULL
-            JOIN billing_period bp ON bp.id = cc.period_id
-            LEFT JOIN paid ON paid.charge_id = cc.id
-            WHERE tcs.internal_id <> :deleted
-              AND bp.ends_on < CURRENT_DATE
-              AND COALESCE(paid.paid_amount, 0) < cc.expected_amount
-            GROUP BY c.id, c.hash_id, c.business_name, c.contact_name, c.contact_email, c.contact_phone,
-                     s.hash_id, s.name, tcs.internal_id, tcs.value_1, tcs.description
-            ORDER BY total_debt DESC
-            """, nativeQuery = true)
-    List<Object[]> overdueClients(@Param("deleted") Long deleted);
-
-    @Query(value = """
-            WITH paid AS (
-                SELECT pa.charge_id AS charge_id, SUM(pa.amount) AS paid_amount
-                FROM payment_allocation pa
-                JOIN payment p ON p.id = pa.payment_id
-                WHERE p.deleted_at IS NULL
-                GROUP BY pa.charge_id
-            )
-            SELECT c.hash_id, c.business_name, c.contact_name, c.contact_email, c.contact_phone,
-                   s.hash_id AS service_hash_id, s.name AS plan_name,
-                   tcs.internal_id AS status_id, tcs.value_1 AS status_code, tcs.description AS status_description,
-                   COUNT(cc.id) AS overdue_months,
-                   COALESCE(SUM(cc.expected_amount - COALESCE(paid.paid_amount, 0)), 0) AS total_debt,
-                   STRING_AGG(bp.year || '-' || LPAD(CAST(bp.month AS text), 2, '0'), ','
-                              ORDER BY bp.year, bp.month) AS periods
-            FROM client c
-            JOIN adm_typology tcs ON tcs.typology_id = c.tp_status
-            JOIN app_service s ON s.id = c.service_id
-            JOIN client_charge cc ON cc.client_id = c.id AND cc.deleted_at IS NULL
-            JOIN billing_period bp ON bp.id = cc.period_id
-            LEFT JOIN paid ON paid.charge_id = cc.id
-            WHERE tcs.internal_id <> :deleted
-              AND c.collector_id = :collectorId
-              AND bp.ends_on < CURRENT_DATE
-              AND COALESCE(paid.paid_amount, 0) < cc.expected_amount
-            GROUP BY c.id, c.hash_id, c.business_name, c.contact_name, c.contact_email, c.contact_phone,
-                     s.hash_id, s.name, tcs.internal_id, tcs.value_1, tcs.description
-            ORDER BY total_debt DESC
-            """, nativeQuery = true)
-    List<Object[]> overdueClientsByCollector(@Param("deleted") Long deleted,
-                                             @Param("collectorId") Long collectorId);
-
-    @Query(value = """
             SELECT COUNT(*)
             FROM client c
             JOIN adm_typology tcs ON tcs.typology_id = c.tp_status

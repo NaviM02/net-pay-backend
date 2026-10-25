@@ -6,6 +6,8 @@ import com.navi.net_pay_backend.domain.dto.MethodCollection;
 import com.navi.net_pay_backend.domain.dto.MonthlyMethodCollection;
 import com.navi.net_pay_backend.domain.dto.OverdueClientView;
 import com.navi.net_pay_backend.domain.dto.PlanClientCount;
+import com.navi.net_pay_backend.domain.dto.OverdueClientQueryDto;
+import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -22,6 +24,12 @@ public interface ReportRepository {
     List<OverdueClientView> overdueClients();
 
     List<OverdueClientView> overdueClients(Long collectorId);
+
+    PaginatedResult<OverdueClientView> overdueClientsPage(OverdueClientQueryDto query);
+
+    List<OverdueClientView> filteredOverdueClients(OverdueClientQueryDto query);
+
+    long countOverdueClients(Long collectorId);
 
     long countActiveClients();
 

@@ -7,6 +7,8 @@ import com.navi.net_pay_backend.domain.entity.AppService;
 import java.util.Optional;
 
 public interface AppServiceRepository {
+    Optional<AppService> findByNameNotDeleted(String name);
+
     Optional<AppService> findByHashIdAndStatusNot(String hashId, Long statusId);
 
     PaginatedResult<AppService> findAll(AppServiceQueryDto queryDto);

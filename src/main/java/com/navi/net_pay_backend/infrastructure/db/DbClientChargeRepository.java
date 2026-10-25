@@ -24,6 +24,12 @@ public class DbClientChargeRepository implements ClientChargeRepository {
     private final AppClientJpaRepository clientRepository;
     private final AppServiceJpaRepository serviceRepository;
     private final BillingPeriodJpaRepository periodRepository;
+    private final DbChargeSynchronization synchronization;
+
+    @Override
+    public void ensureForClients(java.time.LocalDate through, Long collectorId) {
+        synchronization.ensureForClients(through, collectorId);
+    }
 
     @Override
     public Optional<ClientCharge> findByClientIdAndPeriodId(Long clientId, Long periodId) {

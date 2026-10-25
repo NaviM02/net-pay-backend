@@ -13,6 +13,7 @@ import java.util.List;
 public class AppPayment {
     private Long id;
     private String hashId;
+    private String importKey;
     private AppClient client;
     private AppService service;
     private BigDecimal amount;

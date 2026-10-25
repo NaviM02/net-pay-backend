@@ -4,6 +4,8 @@ import com.navi.net_pay_backend.infrastructure.db.entity.AppClientEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.util.List;
 import java.util.Optional;
@@ -20,4 +22,12 @@ public interface AppClientJpaRepository extends JpaRepository<AppClientEntity, L
     Optional<AppClientEntity> findByHashIdAndTpStatusInternalIdNot(String hashId, Long internalId);
 
     long countByServiceIdAndTpStatusInternalIdNot(Long serviceId, Long internalId);
+
+    @Query("""
+            select c.service.id, count(c) from AppClientEntity c
+            where c.service.id in :serviceIds and c.tpStatus.internalId <> :excluded
+            group by c.service.id
+            """)
+    List<Object[]> countClientsByServiceIds(@Param("serviceIds") java.util.Collection<Long> serviceIds,
+                                          @Param("excluded") Long excluded);
 }

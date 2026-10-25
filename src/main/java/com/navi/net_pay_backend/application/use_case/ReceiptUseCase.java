@@ -83,8 +83,13 @@ public class ReceiptUseCase {
 
     @Transactional
     public Receipt issueForPayment(AppPayment payment, ClientCharge charge) {
+        return issueForPayment(payment, charge, true);
+    }
+
+    @Transactional
+    public Receipt issueForPayment(AppPayment payment, ClientCharge charge, boolean storeDocument) {
         return receiptRepository.findByPaymentId(payment.getId())
-                .orElseGet(() -> createReceipt(payment, charge));
+                .orElseGet(() -> createReceipt(payment, charge, storeDocument));
     }
 
     @Transactional
@@ -105,7 +110,7 @@ public class ReceiptUseCase {
         return saved;
     }
 
-    private Receipt createReceipt(AppPayment payment, ClientCharge charge) {
+    private Receipt createReceipt(AppPayment payment, ClientCharge charge, boolean storeDocument) {
         String number = receiptNumberGenerator.next();
 
         Receipt draft = Receipt.builder()
@@ -121,7 +126,7 @@ public class ReceiptUseCase {
 
         String documentPath = null;
         String publicId = null;
-        if (receiptStorageService.isConfigured()) {
+        if (storeDocument && receiptStorageService.isConfigured()) {
             byte[] pdf = receiptPdfRenderer.render(draft);
             StoredFile stored = receiptStorageService.store(pdf, "receipt-" + number + ".pdf");
             documentPath = stored.getUrl();
