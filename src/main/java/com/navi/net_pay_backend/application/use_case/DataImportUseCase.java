@@ -4,6 +4,7 @@ import com.navi.net_pay_backend.application.model.ImportResult;
 import com.navi.net_pay_backend.application.model.ImportRow;
 import com.navi.net_pay_backend.domain.entity.*;
 import com.navi.net_pay_backend.domain.exception.DomainException;
+import com.navi.net_pay_backend.domain.exception.EntityAlreadyExistsException;
 import com.navi.net_pay_backend.domain.repository.AppServiceRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -63,6 +64,7 @@ public class DataImportUseCase {
             try {
                 String key = switch (resource) {
                     case "services" -> required(row.values(), "name", 150).toLowerCase(Locale.ROOT);
+                    case "clients" -> required(row.values(), "businessName", 150).trim().toLowerCase(Locale.ROOT);
                     case "users" -> required(row.values(), "email", 150).toLowerCase(Locale.ROOT);
                     case "payments" -> required(row.values(), "importKey", 150);
                     default -> null;
@@ -70,6 +72,7 @@ public class DataImportUseCase {
                 if (key != null && seen.contains(key)) {
                     throw new DomainException(switch (resource) {
                         case "users" -> "import_duplicate_user_in_file";
+                        case "clients" -> "import_duplicate_client_in_file";
                         case "payments" -> "import_duplicate_payment_in_file";
                         default -> "import_duplicate_service_in_file";
                     });
@@ -89,6 +92,10 @@ public class DataImportUseCase {
                 results.add(new ImportResult.RowResult(row.row(), dryRun ? "VALID" : "CREATED", dryRun ? null : hashId, null));
                 successful++;
             } catch (DomainException ex) {
+                results.add(new ImportResult.RowResult(row.row(), "ERROR", null, ex.getMessage()));
+            } catch (EntityAlreadyExistsException ex) {
+                // A duplicate is an error for this CSV row, not a reason to abort
+                // the rest of the import. Keep its domain key in the row result.
                 results.add(new ImportResult.RowResult(row.row(), "ERROR", null, ex.getMessage()));
             } catch (DataIntegrityViolationException ex) {
                 results.add(new ImportResult.RowResult(row.row(), "ERROR", null, "import_constraint_violation"));

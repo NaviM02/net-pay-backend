@@ -8,6 +8,7 @@ import com.navi.net_pay_backend.domain.entity.AppService;
 import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.domain.enums.TypologyEnum;
 import com.navi.net_pay_backend.domain.exception.DomainException;
+import com.navi.net_pay_backend.domain.exception.EntityAlreadyExistsException;
 import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppClientRepository;
 import com.navi.net_pay_backend.domain.repository.AppServiceRepository;
@@ -54,6 +55,7 @@ public class AppClientUseCase {
     @Transactional
     public AppClient create(AppClient client) {
         validateRequiredFields(client);
+        validateBusinessNameAvailable(client.getBusinessName(), null);
 
         AppClient saved = clientRepository.save(AppClient.builder()
                 .hashId(UUID.randomUUID().toString())
@@ -79,6 +81,7 @@ public class AppClientUseCase {
         AppClient existing = findByHashId(hashId);
 
         validateRequiredFields(client);
+        validateBusinessNameAvailable(client.getBusinessName(), existing.getId());
 
         AppClient saved = clientRepository.save(AppClient.builder()
                 .id(existing.getId())
@@ -176,6 +179,16 @@ public class AppClientUseCase {
         }
         if (client.getService() == null || client.getService().getId() == null) {
             throw new DomainException("client_service_required");
+        }
+    }
+
+    private void validateBusinessNameAvailable(String businessName, Long currentId) {
+        String normalizedName = businessName.trim();
+        boolean exists = currentId == null
+                ? clientRepository.existsByBusinessNameAndStatusNot(normalizedName, TypologyEnum.DELETED.getId())
+                : clientRepository.existsByBusinessNameAndStatusNotAndIdNot(normalizedName, TypologyEnum.DELETED.getId(), currentId);
+        if (exists) {
+            throw new EntityAlreadyExistsException("client_business_name_already_exists");
         }
     }
 

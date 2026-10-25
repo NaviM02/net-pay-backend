@@ -6,6 +6,7 @@ import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.domain.entity.AuditLog;
 import com.navi.net_pay_backend.domain.enums.TypologyEnum;
 import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
+import com.navi.net_pay_backend.domain.exception.DomainException;
 import com.navi.net_pay_backend.domain.repository.AppUserRepository;
 import com.navi.net_pay_backend.domain.repository.AuditLogRepository;
 import lombok.RequiredArgsConstructor;
@@ -28,9 +29,18 @@ public class AuditLogUseCase {
         return auditLogRepository.findByEntity(entityType, entityHashId);
     }
 
-    public List<AuditLog> findByUserHashId(String userHashId) {
+    public PaginatedResult<AuditLog> findByUserHashId(String userHashId, AuditLogQueryDto queryDto) {
+        validatePage(queryDto);
         AppUser user = userRepository.findByPublicIdAndStatusNot(userHashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new EntityNotFoundException("user_not_found"));
-        return auditLogRepository.findByUserId(user.getId());
+        queryDto.setUserId(user.getId());
+        return auditLogRepository.findAll(queryDto);
+    }
+
+    private void validatePage(AuditLogQueryDto queryDto) {
+        if (queryDto.getOffset() == null || queryDto.getOffset() < 0 || queryDto.getSize() == null
+                || queryDto.getSize() < 1 || queryDto.getSize() > 100) {
+            throw new DomainException("pagination_invalid");
+        }
     }
 }

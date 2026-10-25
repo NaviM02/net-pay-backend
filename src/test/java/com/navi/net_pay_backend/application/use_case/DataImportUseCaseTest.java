@@ -96,6 +96,21 @@ class DataImportUseCaseTest {
     }
 
     @Test
+    void existingClientNameIsReportedForThatRowAndDoesNotAbortFollowingRows() throws Exception {
+        when(clients.existsByBusinessNameAndStatusNot(anyString(), anyLong()))
+                .thenReturn(true)
+                .thenReturn(false);
+        var rows = example("clients.csv").subList(0, 2);
+
+        var result = importer.execute("clients", rows, false);
+
+        assertEquals(1, result.failed());
+        assertEquals(1, result.successful());
+        assertEquals("client_business_name_already_exists", result.rows().get(0).error());
+        assertEquals("CREATED", result.rows().get(1).status());
+    }
+
+    @Test
     void dryRunDetectsDuplicateServiceNamesInSameFile() throws Exception {
         var rows = example("services.csv");
         var result = importer.execute("services", List.of(rows.get(0), new ImportRow(3, rows.get(0).values())), true);

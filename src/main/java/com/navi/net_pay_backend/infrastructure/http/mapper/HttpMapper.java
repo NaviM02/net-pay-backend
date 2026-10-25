@@ -188,6 +188,7 @@ public class HttpMapper {
                 .balance(account.getBalance())
                 .credit(account.getCredit())
                 .overdueCount(account.getOverdueCount())
+                .totalCharges(account.getTotalCharges())
                 .charges(charges)
                 .build();
     }

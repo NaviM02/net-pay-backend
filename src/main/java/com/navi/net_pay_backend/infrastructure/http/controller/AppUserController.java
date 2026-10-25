@@ -9,9 +9,11 @@ import com.navi.net_pay_backend.application.use_case.AuditLogUseCase;
 import com.navi.net_pay_backend.application.use_case.PasswordResetUseCase;
 import com.navi.net_pay_backend.domain.dto.AppClientQueryDto;
 import com.navi.net_pay_backend.domain.dto.AppUserQueryDto;
+import com.navi.net_pay_backend.domain.dto.AuditLogQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppUser;
+import com.navi.net_pay_backend.domain.entity.AuditLog;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserRequestDto;
@@ -102,11 +104,13 @@ public class AppUserController {
     }
 
     @GetMapping("/{hashId}/audit-logs")
-    public ResponseEntity<List<AuditLogResponseDto>> findAuditLogs(@PathVariable String hashId) {
-        List<AuditLogResponseDto> response = auditLogUseCase.findByUserHashId(hashId).stream()
+    public ResponseEntity<List<AuditLogResponseDto>> findAuditLogs(@PathVariable String hashId,
+                                                                    @ModelAttribute AuditLogQueryDto queryDto) {
+        PaginatedResult<AuditLog> result = auditLogUseCase.findByUserHashId(hashId, queryDto);
+        List<AuditLogResponseDto> response = result.getItems().stream()
                 .map(httpMapper::toAuditLogResponse)
                 .toList();
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok().header("X-Total-Count", String.valueOf(result.getTotal())).body(response);
     }
 
     @GetMapping("/{hashId}")

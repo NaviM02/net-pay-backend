@@ -20,12 +20,19 @@ public class PermissionAuthorizationManager implements AuthorizationManager<Requ
         if (path.isEmpty()) path = context.getRequest().getRequestURI().substring(context.getRequest().getContextPath().length());
         if (Set.of("/api/users/me", "/api/auth/access").contains(path)) return new AuthorizationDecision(true);
         String method = context.getRequest().getMethod();
+        if ("GET".equals(method) && "/api/notifications".equals(path)) {
+            return new AuthorizationDecision(auth.getAuthorities().stream().anyMatch(a ->
+                    Set.of("dashboard:read", "my-dashboard:read").contains(a.getAuthority())));
+        }
         if ("PUT".equals(method) && "/api/users/me/password".equals(path)) return new AuthorizationDecision(true);
         if ("POST".equals(method) && "/api/files/upload".equals(path)) return new AuthorizationDecision(true);
         // The user CSV importer needs the available roles to let a roles:update
         // operator choose a roleHashId. Keep the dedicated role catalog read grant
         // for everyone else; this exception is limited to the role collection.
         if ("GET".equals(method) && "/api/roles".equals(path)
+                && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("roles:update")))
+            return new AuthorizationDecision(true);
+        if ("GET".equals(method) && path.matches("/api/users/[^/]+/roles")
                 && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("roles:update")))
             return new AuthorizationDecision(true);
         boolean read = Set.of("GET", "HEAD").contains(method);

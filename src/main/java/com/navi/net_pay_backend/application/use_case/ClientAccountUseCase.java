@@ -2,6 +2,8 @@ package com.navi.net_pay_backend.application.use_case;
 
 import com.navi.net_pay_backend.domain.dto.ClientAccountView;
 import com.navi.net_pay_backend.domain.dto.ClientChargeView;
+import com.navi.net_pay_backend.domain.dto.PaginatedResult;
+import com.navi.net_pay_backend.domain.dto.QueryDto;
 import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.ClientCharge;
 import com.navi.net_pay_backend.domain.enums.ChargeStatusEnum;
@@ -10,6 +12,7 @@ import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppClientRepository;
 import com.navi.net_pay_backend.domain.repository.AppPaymentRepository;
 import com.navi.net_pay_backend.domain.repository.PaymentAllocationRepository;
+import com.navi.net_pay_backend.domain.repository.ClientChargeRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -28,20 +31,27 @@ public class ClientAccountUseCase {
     private final AppPaymentRepository paymentRepository;
     private final ClientChargeGenerator chargeGenerator;
     private final PaymentAllocationRepository allocationRepository;
+    private final ClientChargeRepository clientChargeRepository;
 
-    public List<ClientChargeView> charges(String clientHashId) {
-        return buildViews(findClient(clientHashId));
+    public PaginatedResult<ClientChargeView> charges(String clientHashId, QueryDto query) {
+        validatePage(query);
+        AppClient client = findClient(clientHashId);
+        chargeGenerator.ensureUpTo(client, LocalDate.now());
+        PaginatedResult<ClientCharge> page = clientChargeRepository.findByClientIdOrderByPeriod(
+                client.getId(), query.getOffset(), query.getSize());
+        return new PaginatedResult<>(buildViews(client, page.getItems()), page.getTotal());
     }
 
-    public ClientAccountView account(String clientHashId) {
+    public ClientAccountView account(String clientHashId, QueryDto query) {
+        validatePage(query);
         AppClient client = findClient(clientHashId);
-        List<ClientChargeView> views = buildViews(client);
+        List<ClientChargeView> allViews = buildViews(client);
 
         BigDecimal totalExpected = ZERO;
         BigDecimal totalAssigned = ZERO;
         int overdueCount = 0;
 
-        for (ClientChargeView view : views) {
+        for (ClientChargeView view : allViews) {
             totalExpected = totalExpected.add(view.getExpectedAmount());
             totalAssigned = totalAssigned.add(view.getPaidAmount());
             if (view.isOverdue()) {
@@ -63,8 +73,22 @@ public class ClientAccountUseCase {
                 .balance(balance)
                 .credit(credit)
                 .overdueCount(overdueCount)
-                .charges(views)
+                .totalCharges(allViews.size())
+                .charges(page(allViews, query))
                 .build();
+    }
+
+    private List<ClientChargeView> page(List<ClientChargeView> views, QueryDto query) {
+        int from = Math.min(query.getOffset(), views.size());
+        int to = Math.min(from + query.getSize(), views.size());
+        return views.subList(from, to);
+    }
+
+    private void validatePage(QueryDto query) {
+        if (query.getOffset() == null || query.getOffset() < 0 || query.getSize() == null
+                || query.getSize() < 1 || query.getSize() > 100) {
+            throw new com.navi.net_pay_backend.domain.exception.DomainException("pagination_invalid");
+        }
     }
 
     private AppClient findClient(String clientHashId) {
@@ -73,10 +97,15 @@ public class ClientAccountUseCase {
     }
 
     private List<ClientChargeView> buildViews(AppClient client) {
+        List<ClientCharge> charges = chargeGenerator.ensureUpTo(client, LocalDate.now());
+        return buildViews(client, charges);
+    }
+
+    private List<ClientChargeView> buildViews(AppClient client, List<ClientCharge> charges) {
         LocalDate today = LocalDate.now();
         List<ClientChargeView> views = new ArrayList<>();
 
-        for (ClientCharge charge : chargeGenerator.ensureUpTo(client, today)) {
+        for (ClientCharge charge : charges) {
             BigDecimal paid = allocationRepository.sumAmountByChargeId(charge.getId());
             BigDecimal expected = charge.getExpectedAmount() != null ? charge.getExpectedAmount() : ZERO;
             BigDecimal balance = expected.subtract(paid);

@@ -17,5 +17,6 @@ public class ClientAccountView {
     private BigDecimal balance;
     private BigDecimal credit;
     private int overdueCount;
+    private long totalCharges;
     private List<ClientChargeView> charges;
 }

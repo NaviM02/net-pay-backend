@@ -135,6 +135,16 @@ public class DbAppClientRepository implements AppClientRepository {
     }
 
     @Override
+    public boolean existsByBusinessNameAndStatusNot(String businessName, Long statusId) {
+        return repository.existsByBusinessNameIgnoreCaseAndTpStatusInternalIdNot(businessName, statusId);
+    }
+
+    @Override
+    public boolean existsByBusinessNameAndStatusNotAndIdNot(String businessName, Long statusId, Long id) {
+        return repository.existsByBusinessNameIgnoreCaseAndTpStatusInternalIdNotAndIdNot(businessName, statusId, id);
+    }
+
+    @Override
     public AppClient save(AppClient client) {
         AppClientEntity entity = client.getId() != null
                 ? repository.findById(client.getId()).orElseGet(AppClientEntity::new)
