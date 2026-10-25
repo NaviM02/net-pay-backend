@@ -23,6 +23,10 @@ public interface AppClientJpaRepository extends JpaRepository<AppClientEntity, L
 
     long countByServiceIdAndTpStatusInternalIdNot(Long serviceId, Long internalId);
 
+    boolean existsByBusinessNameIgnoreCaseAndTpStatusInternalIdNot(String businessName, Long internalId);
+
+    boolean existsByBusinessNameIgnoreCaseAndTpStatusInternalIdNotAndIdNot(String businessName, Long internalId, Long id);
+
     @Query("""
             select c.service.id, count(c) from AppClientEntity c
             where c.service.id in :serviceIds and c.tpStatus.internalId <> :excluded

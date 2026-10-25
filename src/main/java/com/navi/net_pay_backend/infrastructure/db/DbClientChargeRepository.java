@@ -4,6 +4,7 @@ import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppService;
 import com.navi.net_pay_backend.domain.entity.BillingPeriod;
 import com.navi.net_pay_backend.domain.entity.ClientCharge;
+import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.repository.ClientChargeRepository;
 import com.navi.net_pay_backend.infrastructure.db.entity.AppClientEntity;
 import com.navi.net_pay_backend.infrastructure.db.entity.AppServiceEntity;
@@ -11,6 +12,9 @@ import com.navi.net_pay_backend.infrastructure.db.entity.BillingPeriodEntity;
 import com.navi.net_pay_backend.infrastructure.db.entity.ClientChargeEntity;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -46,6 +50,13 @@ public class DbClientChargeRepository implements ClientChargeRepository {
         return repository.findByClientIdOrderByPeriodYearAscPeriodMonthAsc(clientId).stream()
                 .map(this::toDomain)
                 .toList();
+    }
+
+    @Override
+    public PaginatedResult<ClientCharge> findByClientIdOrderByPeriod(Long clientId, int offset, int size) {
+        Page<ClientChargeEntity> page = repository.findByClientIdAndDeletedAtIsNullOrderByPeriodYearAscPeriodMonthAscIdAsc(
+                clientId, PageRequest.of(offset / size, size));
+        return new PaginatedResult<>(page.getContent().stream().map(this::toDomain).toList(), page.getTotalElements());
     }
 
     @Override

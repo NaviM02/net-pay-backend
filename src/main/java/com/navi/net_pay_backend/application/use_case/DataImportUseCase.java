@@ -63,6 +63,7 @@ public class DataImportUseCase {
             try {
                 String key = switch (resource) {
                     case "services" -> required(row.values(), "name", 150).toLowerCase(Locale.ROOT);
+                    case "clients" -> required(row.values(), "businessName", 150).trim().toLowerCase(Locale.ROOT);
                     case "users" -> required(row.values(), "email", 150).toLowerCase(Locale.ROOT);
                     case "payments" -> required(row.values(), "importKey", 150);
                     default -> null;
@@ -70,6 +71,7 @@ public class DataImportUseCase {
                 if (key != null && seen.contains(key)) {
                     throw new DomainException(switch (resource) {
                         case "users" -> "import_duplicate_user_in_file";
+                        case "clients" -> "import_duplicate_client_in_file";
                         case "payments" -> "import_duplicate_payment_in_file";
                         default -> "import_duplicate_service_in_file";
                     });

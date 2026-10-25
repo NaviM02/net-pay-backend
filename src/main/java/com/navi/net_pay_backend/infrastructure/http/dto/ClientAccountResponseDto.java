@@ -19,5 +19,6 @@ public class ClientAccountResponseDto {
     private BigDecimal balance;
     private BigDecimal credit;
     private int overdueCount;
+    private long totalCharges;
     private List<ClientChargeResponseDto> charges;
 }

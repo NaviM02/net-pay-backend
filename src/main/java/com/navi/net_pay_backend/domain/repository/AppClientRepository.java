@@ -20,5 +20,9 @@ public interface AppClientRepository {
 
     long countByServiceIdAndStatusNot(Long serviceId, Long statusId);
 
+    boolean existsByBusinessNameAndStatusNot(String businessName, Long statusId);
+
+    boolean existsByBusinessNameAndStatusNotAndIdNot(String businessName, Long statusId, Long id);
+
     AppClient save(AppClient client);
 }

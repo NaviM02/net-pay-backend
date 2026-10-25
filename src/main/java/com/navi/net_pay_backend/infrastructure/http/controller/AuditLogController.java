@@ -39,4 +39,14 @@ public class AuditLogController {
                 .toList();
         return ResponseEntity.ok(response);
     }
+
+    @GetMapping("/user/{userHashId}")
+    public ResponseEntity<List<AuditLogResponseDto>> findByUser(@PathVariable String userHashId,
+                                                                 @ModelAttribute AuditLogQueryDto queryDto) {
+        PaginatedResult<AuditLog> result = auditLogUseCase.findByUserHashId(userHashId, queryDto);
+        List<AuditLogResponseDto> response = result.getItems().stream()
+                .map(httpMapper::toAuditLogResponse)
+                .toList();
+        return ResponseEntity.ok().header("X-Total-Count", String.valueOf(result.getTotal())).body(response);
+    }
 }

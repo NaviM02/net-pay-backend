@@ -22,6 +22,8 @@ class PermissionAuthorizationManagerTest {
         assertEquals("receipts:export", permissions.requiredPermission("POST", "/api/receipts/uuid/print"));
         assertEquals("clients:read", permissions.requiredPermission("GET", "/api/users/uuid/clients"));
         assertEquals("audit-logs:read", permissions.requiredPermission("GET", "/api/users/uuid/audit-logs"));
+        assertEquals("clients:read", permissions.requiredPermission("GET", "/api/clients/uuid/payment-status"));
+        assertEquals("audit-logs:read", permissions.requiredPermission("GET", "/api/audit-logs/user/uuid"));
         assertEquals("roles:update", permissions.requiredPermission("POST", "/api/users/uuid/roles"));
         assertEquals("roles:update", permissions.requiredPermission("DELETE", "/api/users/uuid/roles/assignment"));
         assertEquals("users:import", permissions.requiredPermission("POST", "/api/imports/users"));
@@ -33,6 +35,9 @@ class PermissionAuthorizationManagerTest {
     void personalPagePermissionsAuthorizeTheExistingRoutesIndependentlyOfRoles() {
         assertTrue(allowed("GET", "/api/dashboard/collector", "my-dashboard:read"));
         assertFalse(allowed("GET", "/api/dashboard", "my-dashboard:read"));
+        assertTrue(allowed("GET", "/api/notifications", "my-dashboard:read"));
+        assertTrue(allowed("GET", "/api/notifications", "dashboard:read"));
+        assertFalse(allowed("GET", "/api/notifications", "payments:read"));
         assertTrue(allowed("GET", "/api/clients", "my-clients:read"));
         assertTrue(allowed("GET", "/api/clients/uuid", "my-clients:read"));
         assertTrue(allowed("GET", "/api/clients/uuid/account", "my-clients:read"));
@@ -62,6 +67,8 @@ class PermissionAuthorizationManagerTest {
         assertTrue(allowed("GET", "/api/roles", "roles:update"));
         assertFalse(allowed("GET", "/api/roles/uuid", "roles:update"));
         assertFalse(allowed("GET", "/api/roles", "users:import"));
+        assertTrue(allowed("GET", "/api/users/uuid/roles", "roles:update"));
+        assertFalse(allowed("GET", "/api/users/uuid/roles", "users:update"));
     }
 
     @Test
