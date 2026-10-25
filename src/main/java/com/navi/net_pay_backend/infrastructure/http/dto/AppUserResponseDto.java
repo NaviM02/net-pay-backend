@@ -12,11 +12,9 @@ import java.time.LocalDateTime;
 @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class AppUserResponseDto {
-    private Long id;
     private String hashId;
     private String fullName;
     private String email;
-    private AdmTypology tpRole;
     private AdmTypology tpStatus;
     private LocalDateTime lastLoginAt;
 }

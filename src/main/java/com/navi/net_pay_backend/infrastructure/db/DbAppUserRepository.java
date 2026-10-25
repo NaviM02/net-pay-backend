@@ -137,9 +137,6 @@ public class DbAppUserRepository implements AppUserRepository {
         if (user.getTpStatus() != null) {
             entity.setTpStatus(resolveTypology(user.getTpStatus()));
         }
-        if (user.getTpRole() != null) {
-            entity.setTpRole(resolveTypology(user.getTpRole()));
-        }
 
         if (user.getId() == null) {
             entity.setCreatedAt(LocalDateTime.now());
@@ -170,15 +167,6 @@ public class DbAppUserRepository implements AppUserRepository {
                 .value2(entity.getTpStatus().getValue2())
                 .build() : null;
 
-        AdmTypology roleDto = entity.getTpRole() != null ? AdmTypology.builder()
-                .typologyId(entity.getTpRole().getTypologyId())
-                .internalId(entity.getTpRole().getInternalId())
-                .parentTypologyId(entity.getTpRole().getParentTypologyId())
-                .description(entity.getTpRole().getDescription())
-                .value1(entity.getTpRole().getValue1())
-                .value2(entity.getTpRole().getValue2())
-                .build() : null;
-
         return AppUser.builder()
                 .id(entity.getId())
                 .hashId(entity.getHashId())
@@ -186,7 +174,6 @@ public class DbAppUserRepository implements AppUserRepository {
                 .email(entity.getEmail())
                 .password(entity.getPassword())
                 .tpStatus(statusDto)
-                .tpRole(roleDto)
                 .lastLoginAt(entity.getLastLoginAt())
                 .resetTokenHash(entity.getResetTokenHash())
                 .resetTokenExpiresAt(entity.getResetTokenExpiresAt())

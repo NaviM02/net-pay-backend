@@ -50,11 +50,9 @@ public class HttpMapper {
 
     public AppUserResponseDto toAppUserResponse(AppUser user) {
         return AppUserResponseDto.builder()
-                .id(user.getId())
                 .hashId(user.getHashId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .tpRole(user.getTpRole())
                 .tpStatus(user.getTpStatus())
                 .lastLoginAt(user.getLastLoginAt())
                 .build();

@@ -39,6 +39,12 @@ class UserPaymentImportIntegrationTest {
     @Autowired private EntityManager entityManager;
     @Autowired private SpreadsheetImportReader reader;
     @MockitoBean private ReceiptStorageService storage;
+    @MockitoBean private com.navi.net_pay_backend.domain.service.SecurityContext security;
+
+    @org.junit.jupiter.api.BeforeEach
+    void authenticateAdministrator() {
+        when(security.getUserId()).thenReturn(Optional.empty());
+    }
 
     private final List<String> importedKeys = new ArrayList<>();
     private final List<String> importedEmails = new ArrayList<>();
@@ -90,7 +96,7 @@ class UserPaymentImportIntegrationTest {
         String email = UUID.randomUUID() + "@EXAMPLE.COM";
         String password = UUID.randomUUID().toString();
         var row = new LinkedHashMap<>(Map.of("fullName", "Import User", "email", email, "password", password,
-                "role", "collector", "status", "active"));
+                "status", "active"));
         String hashId = handler.user(row);
         importedEmails.add(email.toLowerCase(Locale.ROOT));
         var saved = jdbc.queryForMap("select email, password_hash from app_user where hash_id = ?", hashId);
@@ -103,13 +109,26 @@ class UserPaymentImportIntegrationTest {
         importedEmails.add(generatedEmail);
         String generatedHashId = handler.user(Map.of("fullName", "Generated Password", "email", generatedEmail));
         var defaults = jdbc.queryForMap("""
-                select u.password_hash, role.internal_id as role, status.internal_id as status
-                from app_user u join adm_typology role on role.typology_id = u.tp_role
+                select u.password_hash, status.internal_id as status
+                from app_user u
                 join adm_typology status on status.typology_id = u.tp_status where u.hash_id = ?
                 """, generatedHashId);
         assertTrue(((String) defaults.get("password_hash")).startsWith("$2"));
-        assertEquals(62L, ((Number) defaults.get("role")).longValue());
+        assertEquals(1L, jdbc.queryForObject("""
+                select count(*) from app_user_role ur join app_user u on u.id = ur.user_id
+                join app_role r on r.id = ur.role_id
+                where u.hash_id = ? and r.hash_id = 'bb66bb4f-020e-44de-b604-8a3153d74862'
+                """, Long.class, generatedHashId));
         assertEquals(49L, ((Number) defaults.get("status")).longValue());
+    }
+
+    @Test
+    void userImportRequiresRoleUpdatePermissionForAnExplicitRoleHashId() {
+        String email = UUID.randomUUID() + "@example.com";
+        importedEmails.add(email);
+        assertEquals("unauthorized", assertThrows(com.navi.net_pay_backend.domain.exception.UnauthorizeException.class,
+                () -> handler.user(Map.of("fullName", "Imported Administrator", "email", email),
+                        "bb66bb4f-020e-44de-b604-8a3153d74861")).getMessage());
     }
 
     @Test
@@ -187,7 +206,7 @@ class UserPaymentImportIntegrationTest {
         error("import_collector_ambiguous", () -> resolver.collector(Map.of("collectorName", collectorName)));
         assertEquals(collector, resolver.collector(Map.of("collectorName", collectorName, "collectorEmail", collectorEmail)).getId());
         String adminEmail = UUID.randomUUID() + "@example.com";
-        user("Not a collector", adminEmail, 61, 49);
+        user("No payment permissions", adminEmail, 0, 49);
         error("import_collector_role_invalid", () -> resolver.collector(Map.of("collectorEmail", adminEmail)));
         String inactiveEmail = UUID.randomUUID() + "@example.com";
         user("Inactive collector", inactiveEmail, 62, 50);
@@ -251,12 +270,17 @@ class UserPaymentImportIntegrationTest {
     }
 
     private long user(String name, String email, long role, long status) {
-        return jdbc.queryForObject("""
-                insert into app_user (hash_id, full_name, email, password_hash, tp_role, tp_status)
+        long userId = jdbc.queryForObject("""
+                insert into app_user (hash_id, full_name, email, password_hash, tp_status)
                 values (?, ?, ?, 'unused-test-hash',
-                        (select typology_id from adm_typology where internal_id = ?),
                         (select typology_id from adm_typology where internal_id = ?)) returning id
-                """, Long.class, UUID.randomUUID().toString(), name, email, role, status);
+                """, Long.class, UUID.randomUUID().toString(), name, email, status);
+        if (role != 0) jdbc.update("""
+                insert into app_user_role(hash_id, user_id, role_id)
+                select ?, ?, id from app_role where hash_id = ?
+                """, UUID.randomUUID().toString(), userId, role == 61
+                ? "bb66bb4f-020e-44de-b604-8a3153d74861" : "bb66bb4f-020e-44de-b604-8a3153d74862");
+        return userId;
     }
 
     private long service() {

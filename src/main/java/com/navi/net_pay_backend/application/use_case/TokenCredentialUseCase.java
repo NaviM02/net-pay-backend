@@ -22,7 +22,7 @@ public class TokenCredentialUseCase {
     private long expiresIn;
 
     public String create(AppUser user, String fingerprint, String userAgent) {
-        String token = tokenService.generateToken(user.getEmail(), user.getId(), user.getTpRole().getInternalId());
+        String token = tokenService.generateToken(user.getEmail(), user.getId());
         LocalDateTime effectiveDate = LocalDateTime.now();
         LocalDateTime expirationDate = effectiveDate.plusSeconds(expiresIn);
 

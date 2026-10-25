@@ -15,7 +15,7 @@ import java.util.Optional;
 
 @Repository
 public interface AppUserJpaRepository extends JpaRepository<AppUserEntity, Long>, JpaSpecificationExecutor<AppUserEntity> {
-    @EntityGraph(attributePaths = {"tpStatus", "tpRole"})
+    @EntityGraph(attributePaths = {"tpStatus"})
     Optional<AppUserEntity> findByEmailAndTpStatusInternalId(String email, Long internalId);
 
     @Modifying
@@ -23,6 +23,8 @@ public interface AppUserJpaRepository extends JpaRepository<AppUserEntity, Long>
     @Query("update AppUserEntity u set u.lastLoginAt = :now, u.updatedAt = :now where u.id = :id")
     void updateLastLogin(@Param("id") Long id, @Param("now") java.time.LocalDateTime now);
 
+    // JWT authentication runs before MVC's OpenEntityManagerInView interceptor.
+    @EntityGraph(attributePaths = {"tpStatus"})
     Optional<AppUserEntity> findByIdAndTpStatusInternalIdNot(Long id, Long internalId);
 
     Optional<AppUserEntity> findByHashIdAndTpStatusInternalIdNot(String hashId, Long internalId);

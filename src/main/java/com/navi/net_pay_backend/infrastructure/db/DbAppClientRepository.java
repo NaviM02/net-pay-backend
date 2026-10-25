@@ -230,7 +230,6 @@ public class DbAppClientRepository implements AppClientRepository {
                 .fullName(entity.getFullName())
                 .email(entity.getEmail())
                 .password(entity.getPassword())
-                .tpRole(toDomain(entity.getTpRole()))
                 .tpStatus(toDomain(entity.getTpStatus()))
                 .lastLoginAt(entity.getLastLoginAt())
                 .build();

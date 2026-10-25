@@ -24,14 +24,13 @@ public class JwtTokenService implements TokenService {
     }
 
     @Override
-    public String generateToken(String username, Long userId, Long roleId) {
+    public String generateToken(String username, Long userId) {
         Date now = new Date();
         Date expirationDate = new Date(now.getTime() + (expiration * 1000));
 
         return Jwts.builder()
                 .subject(username)
                 .claim("userId", userId)
-                .claim("roleId", roleId)
                 .issuer("NETPAY")
                 .audience().add("NETPAY").and()
                 .issuedAt(now)
@@ -50,9 +49,7 @@ public class JwtTokenService implements TokenService {
                     .getPayload();
 
             Long userId = claims.get("userId", Long.class);
-            Long roleId = claims.get("roleId", Long.class);
-
-            return new TokenPayload(userId, roleId);
+            return new TokenPayload(userId);
 
         } catch (Exception e) {
             return null;

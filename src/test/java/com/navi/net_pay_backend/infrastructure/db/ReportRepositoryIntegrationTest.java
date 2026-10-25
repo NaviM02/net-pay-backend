@@ -122,9 +122,8 @@ class ReportRepositoryIntegrationTest {
 
     private long collector() {
         return jdbc.queryForObject("""
-                insert into app_user (hash_id, full_name, email, password_hash, tp_role, tp_status)
+                insert into app_user (hash_id, full_name, email, password_hash, tp_status)
                 values (?, 'Report test', ?, 'unused-test-hash',
-                        (select typology_id from adm_typology where internal_id = 62),
                         (select typology_id from adm_typology where internal_id = 49)) returning id
                 """, Long.class, UUID.randomUUID().toString(), UUID.randomUUID() + "@example.com");
     }

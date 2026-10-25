@@ -32,11 +32,16 @@ public class DataImportUseCase {
     private static final Set<String> CLIENT_COLUMNS = Set.of("businessName", "contactName", "contactEmail",
             "contactPhone", "address", "latitude", "longitude", "customerSince", "serviceName", "collectorHashId",
             "collectorName", "collectorEmail", "status");
-    private static final Set<String> USER_COLUMNS = Set.of("fullName", "email", "password", "role", "status");
+    private static final Set<String> USER_COLUMNS = Set.of("fullName", "email", "password", "status");
     private static final Set<String> PAYMENT_COLUMNS = Set.of("importKey", "clientName", "clientEmail", "clientPhone",
             "collectorName", "collectorEmail", "amount", "paidAt", "method", "status", "reference", "comment");
 
     public ImportResult execute(String resource, List<ImportRow> rows, boolean dryRun) {
+        return execute(resource, rows, dryRun, null);
+    }
+
+    public ImportResult execute(String resource, List<ImportRow> rows, boolean dryRun, String roleHashId) {
+        if (roleHashId != null && !"users".equals(resource)) throw new DomainException("import_role_not_supported");
         Set<String> allowed = switch (resource) {
             case "services" -> SERVICE_COLUMNS;
             case "clients" -> CLIENT_COLUMNS;
@@ -73,7 +78,7 @@ public class DataImportUseCase {
                     String saved = switch (resource) {
                         case "services" -> service(row.values());
                         case "clients" -> client(row.values());
-                        case "users" -> userPaymentHandler.user(row.values());
+                        case "users" -> userPaymentHandler.user(row.values(), roleHashId);
                         case "payments" -> userPaymentHandler.payment(row.values(), dryRun);
                         default -> throw new DomainException("import_unknown_resource");
                     };

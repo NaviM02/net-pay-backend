@@ -56,8 +56,7 @@ public class AppUserUseCase {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .password(passwordHashService.hash(user.getPassword()))
-                .tpRole(user.getTpRole())
-                .tpStatus(user.getTpStatus())
+                .tpStatus(user.getTpStatus() == null ? AdmTypology.builder().internalId(TypologyEnum.ACTIVE.getId()).build() : user.getTpStatus())
                 .build();
 
         AppUser saved = userRepository.save(newUser);
@@ -67,6 +66,9 @@ public class AppUserUseCase {
 
     @Transactional
     public AppUser update(String hashId, AppUser userDetails) {
+        if (!isBlank(userDetails.getPassword())) {
+            throw new DomainException("use_change_password_endpoint");
+        }
         AppUser existingUser = userRepository.findByPublicIdAndStatusNot(hashId, TypologyEnum.DELETED.getId())
                 .orElseThrow(() -> new DomainException("user_not_found"));
 
@@ -76,17 +78,12 @@ public class AppUserUseCase {
             throw new EntityAlreadyExistsException("user_email_must_be_unique");
         }
 
-        String password = userDetails.getPassword() != null && !userDetails.getPassword().isBlank()
-                ? passwordHashService.hash(userDetails.getPassword())
-                : existingUser.getPassword();
-
         AppUser updatedUser = AppUser.builder()
                 .id(existingUser.getId())
                 .hashId(existingUser.getHashId())
                 .fullName(userDetails.getFullName())
                 .email(email)
-                .password(password)
-                .tpRole(userDetails.getTpRole() != null ? userDetails.getTpRole() : existingUser.getTpRole())
+                .password(existingUser.getPassword())
                 .tpStatus(userDetails.getTpStatus() != null ? userDetails.getTpStatus() : existingUser.getTpStatus())
                 .lastLoginAt(existingUser.getLastLoginAt())
                 .resetTokenHash(existingUser.getResetTokenHash())
@@ -110,7 +107,6 @@ public class AppUserUseCase {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .password(user.getPassword())
-                .tpRole(user.getTpRole())
                 .tpStatus(AdmTypology.builder().internalId(TypologyEnum.DELETED.getId()).build())
                 .lastLoginAt(user.getLastLoginAt())
                 .build();
@@ -127,7 +123,6 @@ public class AppUserUseCase {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("fullName", user.getFullName());
         map.put("email", user.getEmail());
-        map.put("role", user.getTpRole() != null ? user.getTpRole().getInternalId() : null);
         map.put("status", user.getTpStatus() != null ? user.getTpStatus().getInternalId() : null);
         return map;
     }

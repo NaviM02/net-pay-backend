@@ -7,5 +7,4 @@ import lombok.Getter;
 @AllArgsConstructor
 public class TokenPayload {
     private Long userId;
-    private Long roleId;
 }

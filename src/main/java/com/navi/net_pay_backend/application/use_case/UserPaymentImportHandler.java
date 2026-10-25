@@ -24,13 +24,20 @@ import static com.navi.net_pay_backend.application.model.ImportValues.*;
 @RequiredArgsConstructor
 @Transactional(propagation = Propagation.MANDATORY)
 public class UserPaymentImportHandler {
+    private static final String DEFAULT_COLLECTOR_ROLE_HASH_ID = "bb66bb4f-020e-44de-b604-8a3153d74862";
+
     private final AppUserUseCase userUseCase;
     private final AppPaymentUseCase paymentUseCase;
     private final AppPaymentRepository payments;
     private final ImportLookupRepository lookup;
     private final ImportPartyResolver resolver;
+    private final AccessControlUseCase access;
 
     public String user(Map<String, String> row) {
+        return user(row, null);
+    }
+
+    public String user(Map<String, String> row, String requestedRoleHashId) {
         String name = required(row, "fullName", 150);
         String email = email(row, "email");
         if (email == null) throw new DomainException("import_email_required");
@@ -39,14 +46,23 @@ public class UserPaymentImportHandler {
         if (password != null && password.getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new DomainException("import_password_too_long");
         }
-        Long role = typology(row, "role", 62L, 60L);
+        if (requestedRoleHashId != null) {
+            requestedRoleHashId = requestedRoleHashId.trim();
+            if (requestedRoleHashId.isEmpty()) requestedRoleHashId = null;
+            if (requestedRoleHashId != null && requestedRoleHashId.length() > 50)
+                throw new DomainException("import_roleHashId_too_long");
+        }
+        if (requestedRoleHashId != null && !access.myPermissions().contains("roles:update"))
+            throw new DomainException("role_assignment_permission_denied");
         Long status = typology(row, "status", 49L, 48L);
         lookup.lockUserEmail(email);
         if (!lookup.findUserIds(email, null).isEmpty()) throw new DomainException("import_user_email_already_exists");
-        return userUseCase.create(AppUser.builder().fullName(name).email(email)
+        AppUser user = userUseCase.create(AppUser.builder().fullName(name).email(email)
                 .password(password == null ? UUID.randomUUID().toString() : password)
-                .tpRole(AdmTypology.builder().internalId(role).build())
-                .tpStatus(AdmTypology.builder().internalId(status).build()).build()).getHashId();
+                .tpStatus(AdmTypology.builder().internalId(status).build()).build());
+        String roleHashId = requestedRoleHashId == null ? DEFAULT_COLLECTOR_ROLE_HASH_ID : requestedRoleHashId;
+        access.assign(user.getHashId(), new com.navi.net_pay_backend.application.model.UserRoleRequest(roleHashId, null, null));
+        return user.getHashId();
     }
 
     public String payment(Map<String, String> row, boolean dryRun) {
