@@ -24,6 +24,9 @@ public class AppPaymentEntity {
     @Column(name = "hash_id", nullable = false, unique = true, length = 50)
     private String hashId;
 
+    @Column(name = "import_key", length = 150)
+    private String importKey;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "client_id", referencedColumnName = "id", nullable = false)
     private AppClientEntity client;

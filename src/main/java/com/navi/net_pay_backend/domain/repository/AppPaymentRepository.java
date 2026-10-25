@@ -8,6 +8,9 @@ import java.math.BigDecimal;
 import java.util.Optional;
 
 public interface AppPaymentRepository {
+    /** Includes soft-deleted payments, so an annulled import cannot be silently recreated. */
+    boolean existsByImportKey(String importKey);
+
     Optional<AppPayment> findByHashIdAndStatusNot(String hashId, Long statusId);
 
     PaginatedResult<AppPayment> findAll(AppPaymentQueryDto queryDto);

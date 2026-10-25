@@ -9,6 +9,8 @@ import java.util.Optional;
 
 @Repository
 public interface AppServiceJpaRepository extends JpaRepository<AppServiceEntity, Long>, JpaSpecificationExecutor<AppServiceEntity> {
+    Optional<AppServiceEntity> findByNameIgnoreCaseAndDeletedAtIsNullAndTpStatusInternalIdNot(String name, Long status);
+
     Optional<AppServiceEntity> findByHashIdAndTpStatusInternalIdNot(String hashId, Long internalId);
 
     // IgnoreCase para calzar con el indice unico uq_app_service_name_alive, que compara LOWER(name).

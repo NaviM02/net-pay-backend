@@ -6,6 +6,8 @@ import com.navi.net_pay_backend.domain.dto.MethodCollection;
 import com.navi.net_pay_backend.domain.dto.MonthlyMethodCollection;
 import com.navi.net_pay_backend.domain.dto.OverdueClientView;
 import com.navi.net_pay_backend.domain.dto.PlanClientCount;
+import com.navi.net_pay_backend.domain.dto.OverdueClientQueryDto;
+import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.enums.TypologyEnum;
 import com.navi.net_pay_backend.domain.repository.ReportRepository;
 import lombok.RequiredArgsConstructor;
@@ -16,7 +18,6 @@ import java.math.RoundingMode;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,6 +29,7 @@ public class DbReportRepository implements ReportRepository {
     private static final BigDecimal ZERO = BigDecimal.ZERO;
 
     private final ReportJpaRepository repository;
+    private final DbOverdueClientQuery overdueQuery;
 
     @Override
     public CollectionSummary collectionSummary(LocalDate from, LocalDate to) {
@@ -93,28 +95,22 @@ public class DbReportRepository implements ReportRepository {
 
     @Override
     public List<OverdueClientView> overdueClients(Long collectorId) {
-        List<Object[]> rows = collectorId == null
-                ? repository.overdueClients(TypologyEnum.DELETED.getId())
-                : repository.overdueClientsByCollector(TypologyEnum.DELETED.getId(), collectorId);
-        return rows.stream().map(this::toOverdueClientView).toList();
+        return overdueQuery.all(collectorId, null);
     }
 
-    private OverdueClientView toOverdueClientView(Object[] row) {
-        return OverdueClientView.builder()
-                .clientHashId((String) row[0])
-                .businessName((String) row[1])
-                .contactName((String) row[2])
-                .contactEmail((String) row[3])
-                .contactPhone((String) row[4])
-                .serviceHashId((String) row[5])
-                .planName((String) row[6])
-                .statusId(row[7] != null ? toLong(row[7]) : null)
-                .statusCode((String) row[8])
-                .statusDescription((String) row[9])
-                .overdueMonths(toLong(row[10]))
-                .totalDebt(toDecimal(row[11]))
-                .overduePeriods(splitPeriods((String) row[12]))
-                .build();
+    @Override
+    public PaginatedResult<OverdueClientView> overdueClientsPage(OverdueClientQueryDto query) {
+        return overdueQuery.page(query);
+    }
+
+    @Override
+    public List<OverdueClientView> filteredOverdueClients(OverdueClientQueryDto query) {
+        return overdueQuery.all(null, query);
+    }
+
+    @Override
+    public long countOverdueClients(Long collectorId) {
+        return overdueQuery.count(collectorId, null);
     }
 
     @Override
@@ -216,13 +212,6 @@ public class DbReportRepository implements ReportRepository {
         return BigDecimal.valueOf(completed)
                 .multiply(BigDecimal.valueOf(100))
                 .divide(BigDecimal.valueOf(attempts), 2, RoundingMode.HALF_UP);
-    }
-
-    private List<String> splitPeriods(String raw) {
-        if (raw == null || raw.isBlank()) {
-            return List.of();
-        }
-        return Arrays.asList(raw.split(","));
     }
 
     private BigDecimal toDecimal(Object value) {

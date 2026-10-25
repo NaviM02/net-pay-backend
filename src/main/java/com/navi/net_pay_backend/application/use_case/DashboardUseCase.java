@@ -14,6 +14,7 @@ import com.navi.net_pay_backend.domain.exception.DomainException;
 import com.navi.net_pay_backend.domain.repository.AppPaymentRepository;
 import com.navi.net_pay_backend.domain.repository.AuditLogRepository;
 import com.navi.net_pay_backend.domain.repository.ReportRepository;
+import com.navi.net_pay_backend.domain.repository.ClientChargeRepository;
 import com.navi.net_pay_backend.domain.service.SecurityContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,8 +37,7 @@ public class DashboardUseCase {
     private final ReportRepository reportRepository;
     private final AppPaymentRepository paymentRepository;
     private final AuditLogRepository auditLogRepository;
-    private final ClientChargeGenerator chargeGenerator;
-    private final com.navi.net_pay_backend.domain.repository.AppClientRepository clientRepository;
+    private final ClientChargeRepository chargeRepository;
     private final SecurityContext securityContext;
 
     public DashboardView dashboard(Integer year, Integer month, int recentLimit, int months) {
@@ -46,8 +46,8 @@ public class DashboardUseCase {
         LocalDate monthEnd = target.atEndOfMonth();
         LocalDate nextMonthStart = target.plusMonths(1).atDay(1);
 
-        int safeRecent = recentLimit > 0 ? recentLimit : 5;
-        int safeMonths = months > 0 ? months : 6;
+        int safeRecent = recentLimit > 0 ? Math.min(recentLimit, 100) : 5;
+        int safeMonths = months > 0 ? Math.min(months, 120) : 6;
 
         DashboardSummary summary = DashboardSummary.builder()
                 .activeClients(reportRepository.countActiveClients())
@@ -80,13 +80,15 @@ public class DashboardUseCase {
         LocalDate monthEnd = target.atEndOfMonth();
         LocalDate nextMonthStart = target.plusMonths(1).atDay(1);
 
-        int safeRecent = recentLimit > 0 ? recentLimit : 5;
-        int safeMonths = months > 0 ? months : 6;
+        int safeRecent = recentLimit > 0 ? Math.min(recentLimit, 100) : 5;
+        int safeMonths = months > 0 ? Math.min(months, 120) : 6;
+        chargeRepository.ensureForClients(LocalDate.now(), collectorId);
+        var overdue = reportRepository.overdueClients(collectorId);
 
         CollectorDashboardSummary summary = CollectorDashboardSummary.builder()
                 .assignedClients(reportRepository.countActiveClients(collectorId))
                 .monthCollection(reportRepository.collectionSummary(monthStart, monthEnd, collectorId).getTotalCollected())
-                .overdueClients(countOverdueClients(collectorId))
+                .overdueClients(overdue.size())
                 .receiptsIssued(reportRepository.countReceiptsIssuedBetween(
                         monthStart.atStartOfDay(), nextMonthStart.atStartOfDay(), collectorId))
                 .year(target.getYear())
@@ -97,7 +99,7 @@ public class DashboardUseCase {
         return CollectorDashboardView.builder()
                 .summary(summary)
                 .recentPayments(recentPayments(collectorId, safeRecent))
-                .overdueClients(reportRepository.overdueClients(collectorId))
+                .overdueClients(overdue)
                 .collectionsByMethod(normalizeMethods(
                         reportRepository.collectionsByMethodBetween(monthStart, monthEnd, collectorId)))
                 .collectionsByMethodByMonth(collectorMethodSeries(collectorId, target, safeMonths))
@@ -105,19 +107,8 @@ public class DashboardUseCase {
     }
 
     private long countOverdueClients() {
-        LocalDate today = LocalDate.now();
-        for (var client : clientRepository.findAllNotDeleted()) {
-            chargeGenerator.ensureUpTo(client, today);
-        }
-        return reportRepository.overdueClients().size();
-    }
-
-    private long countOverdueClients(Long collectorId) {
-        LocalDate today = LocalDate.now();
-        for (var client : clientRepository.findByCollectorId(collectorId)) {
-            chargeGenerator.ensureUpTo(client, today);
-        }
-        return reportRepository.overdueClients(collectorId).size();
+        chargeRepository.ensureForClients(LocalDate.now(), null);
+        return reportRepository.countOverdueClients(null);
     }
 
     private List<com.navi.net_pay_backend.domain.entity.AppPayment> recentPayments(int limit) {

@@ -4,6 +4,7 @@ import com.navi.net_pay_backend.domain.dto.AppServiceQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.entity.AdmTypology;
 import com.navi.net_pay_backend.domain.entity.AppService;
+import com.navi.net_pay_backend.domain.enums.TypologyEnum;
 import com.navi.net_pay_backend.domain.exception.EntityNotFoundException;
 import com.navi.net_pay_backend.domain.repository.AppServiceRepository;
 import com.navi.net_pay_backend.infrastructure.db.entity.AdmTypologyEntity;
@@ -26,6 +27,12 @@ public class DbAppServiceRepository implements AppServiceRepository {
 
     private final AppServiceJpaRepository repository;
     private final AdmTypologyJpaRepository typologyRepository;
+
+    @Override
+    public Optional<AppService> findByNameNotDeleted(String name) {
+        return repository.findByNameIgnoreCaseAndDeletedAtIsNullAndTpStatusInternalIdNot(
+                name, TypologyEnum.DELETED.getId()).map(this::toDomain);
+    }
 
     @Override
     public Optional<AppService> findByHashIdAndStatusNot(String hashId, Long statusId) {

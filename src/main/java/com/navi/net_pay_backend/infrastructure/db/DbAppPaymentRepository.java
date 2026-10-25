@@ -23,12 +23,16 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Map;
+import java.util.HashMap;
+import java.util.HashSet;
 
 @Repository
 @RequiredArgsConstructor
@@ -41,11 +45,17 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
     private final AdmTypologyJpaRepository typologyRepository;
 
     @Override
+    public boolean existsByImportKey(String importKey) {
+        return repository.existsByImportKey(importKey);
+    }
+
+    @Override
     public Optional<AppPayment> findByHashIdAndStatusNot(String hashId, Long statusId) {
         return repository.findByHashIdAndTpPaymentStatusInternalIdNot(hashId, statusId).map(this::toDomain);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public PaginatedResult<AppPayment> findAll(AppPaymentQueryDto queryDto) {
         Specification<AppPaymentEntity> specification = (root, query, cb) -> {
             List<Predicate> predicates = new ArrayList<>();
@@ -112,9 +122,23 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
 
         Page<AppPaymentEntity> page = repository.findAll(specification, pageable);
 
+        var serviceIds = new HashSet<Long>();
+        for (AppPaymentEntity payment : page.getContent()) {
+            if (payment.getService() != null) serviceIds.add(payment.getService().getId());
+            if (payment.getClient() != null && payment.getClient().getService() != null) {
+                serviceIds.add(payment.getClient().getService().getId());
+            }
+        }
+        Map<Long, Integer> counts = new HashMap<>();
+        if (!serviceIds.isEmpty()) {
+            for (Object[] row : clientRepository.countClientsByServiceIds(serviceIds, TypologyEnum.DELETED.getId())) {
+                counts.put(((Number) row[0]).longValue(), ((Number) row[1]).intValue());
+            }
+        }
+
         List<AppPayment> items = page.getContent()
                 .stream()
-                .map(this::toDomain)
+                .map(entity -> toDomain(entity, counts))
                 .toList();
 
         return new PaginatedResult<>(items, page.getTotalElements());
@@ -133,6 +157,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 : new AppPaymentEntity();
 
         entity.setHashId(payment.getHashId());
+        entity.setImportKey(payment.getImportKey());
         entity.setAmount(payment.getAmount());
         entity.setPaidAt(payment.getPaidAt());
         entity.setReference(payment.getReference());
@@ -179,17 +204,22 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
     }
 
     private AppPayment toDomain(AppPaymentEntity entity) {
+        return toDomain(entity, null);
+    }
+
+    private AppPayment toDomain(AppPaymentEntity entity, Map<Long, Integer> counts) {
         if (entity == null) return null;
 
         return AppPayment.builder()
                 .id(entity.getId())
                 .hashId(entity.getHashId())
+                .importKey(entity.getImportKey())
                 .amount(entity.getAmount())
                 .paidAt(entity.getPaidAt())
                 .reference(entity.getReference())
                 .comment(entity.getComment())
-                .client(toDomain(entity.getClient()))
-                .service(toDomain(entity.getService()))
+                .client(toDomain(entity.getClient(), counts))
+                .service(toDomain(entity.getService(), counts))
                 .collector(toDomain(entity.getCollector()))
                 .tpPaymentMethod(toDomain(entity.getTpPaymentMethod()))
                 .tpPaymentStatus(toDomain(entity.getTpPaymentStatus()))
@@ -199,7 +229,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 .build();
     }
 
-    private AppClient toDomain(AppClientEntity entity) {
+    private AppClient toDomain(AppClientEntity entity, Map<Long, Integer> counts) {
         if (entity == null) return null;
 
         return AppClient.builder()
@@ -214,7 +244,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 .longitude(entity.getLongitude())
                 .customerSince(entity.getCustomerSince())
                 .tpStatus(toDomain(entity.getTpStatus()))
-                .service(toDomain(entity.getService()))
+                .service(toDomain(entity.getService(), counts))
                 .collector(toDomain(entity.getCollector()))
                 .createdAt(entity.getCreatedAt())
                 .updatedAt(entity.getUpdatedAt())
@@ -222,7 +252,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 .build();
     }
 
-    private AppService toDomain(AppServiceEntity entity) {
+    private AppService toDomain(AppServiceEntity entity, Map<Long, Integer> counts) {
         if (entity == null) return null;
         return AppService.builder()
                 .id(entity.getId())
@@ -230,8 +260,9 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 .name(entity.getName())
                 .speed(entity.getSpeed())
                 .monthlyPrice(entity.getMonthlyPrice())
-                .clientCount((int) clientRepository.countByServiceIdAndTpStatusInternalIdNot(
-                        entity.getId(), TypologyEnum.DELETED.getId()))
+                .clientCount(counts != null ? counts.getOrDefault(entity.getId(), 0)
+                        : (int) clientRepository.countByServiceIdAndTpStatusInternalIdNot(
+                                entity.getId(), TypologyEnum.DELETED.getId()))
                 .tpType(toDomain(entity.getTpType()))
                 .tpStatus(toDomain(entity.getTpStatus()))
                 .createdAt(entity.getCreatedAt())

@@ -6,8 +6,7 @@ import com.navi.net_pay_backend.domain.dto.OverdueClientQueryDto;
 import com.navi.net_pay_backend.domain.dto.OverdueClientView;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.dto.ReportTable;
-import com.navi.net_pay_backend.domain.entity.AppClient;
-import com.navi.net_pay_backend.domain.repository.AppClientRepository;
+import com.navi.net_pay_backend.domain.repository.ClientChargeRepository;
 import com.navi.net_pay_backend.domain.repository.ReportRepository;
 import com.navi.net_pay_backend.domain.service.ReportTableCsvExporter;
 import com.navi.net_pay_backend.domain.service.ReportTablePdfExporter;
@@ -24,8 +23,7 @@ import java.util.List;
 public class ReportUseCase {
 
     private final ReportRepository reportRepository;
-    private final AppClientRepository clientRepository;
-    private final ClientChargeGenerator chargeGenerator;
+    private final ClientChargeRepository chargeRepository;
     private final ReportTablePdfExporter pdfExporter;
     private final ReportTableCsvExporter csvExporter;
 
@@ -40,14 +38,8 @@ public class ReportUseCase {
     }
 
     public PaginatedResult<OverdueClientView> overdueClients(OverdueClientQueryDto queryDto) {
-        List<OverdueClientView> filtered = filteredOverdueClients(queryDto);
-
-        int size = queryDto.getSize() != null && queryDto.getSize() > 0 ? queryDto.getSize() : 10;
-        int offset = queryDto.getOffset() != null && queryDto.getOffset() > 0 ? queryDto.getOffset() : 0;
-        int start = Math.min(offset, filtered.size());
-        int end = Math.min(start + size, filtered.size());
-
-        return new PaginatedResult<>(filtered.subList(start, end), filtered.size());
+        ensureCharges();
+        return reportRepository.overdueClientsPage(queryDto);
     }
 
     // ── Export ──────────────────────────────────────────────────────────────
@@ -123,13 +115,7 @@ public class ReportUseCase {
     private List<OverdueClientView> filteredOverdueClients(OverdueClientQueryDto queryDto) {
         ensureCharges();
 
-        return reportRepository.overdueClients().stream()
-                .filter(view -> matchesSearch(view, queryDto.getSearch()))
-                .filter(view -> queryDto.getServiceHashId() == null
-                        || queryDto.getServiceHashId().equals(view.getServiceHashId()))
-                .filter(view -> queryDto.getStatus() == null
-                        || queryDto.getStatus().equals(view.getStatusId()))
-                .toList();
+        return reportRepository.filteredOverdueClients(queryDto);
     }
 
     private LocalDate[] normalizeRange(LocalDate from, LocalDate to) {
@@ -142,24 +128,7 @@ public class ReportUseCase {
     }
 
     private void ensureCharges() {
-        LocalDate today = LocalDate.now();
-        for (AppClient client : clientRepository.findAllNotDeleted()) {
-            chargeGenerator.ensureUpTo(client, today);
-        }
-    }
-
-    private boolean matchesSearch(OverdueClientView view, String search) {
-        if (search == null || search.isBlank()) {
-            return true;
-        }
-        String term = search.toLowerCase();
-        return contains(view.getBusinessName(), term)
-                || contains(view.getContactName(), term)
-                || contains(view.getContactEmail(), term);
-    }
-
-    private boolean contains(String value, String term) {
-        return value != null && value.toLowerCase().contains(term);
+        chargeRepository.ensureForClients(LocalDate.now(), null);
     }
 
     private String money(BigDecimal value) {

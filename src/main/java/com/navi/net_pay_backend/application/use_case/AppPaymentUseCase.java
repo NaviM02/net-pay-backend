@@ -61,13 +61,22 @@ public class AppPaymentUseCase {
 
     @Transactional
     public AppPayment create(AppPayment payment) {
+        return createPayment(payment, true);
+    }
+
+    @Transactional
+    public AppPayment createForImport(AppPayment payment, boolean dryRun) {
+        return createPayment(payment, !dryRun);
+    }
+
+    private AppPayment createPayment(AppPayment payment, boolean storeReceiptDocument) {
         AppClient client = resolveClient(payment);
         validatePayment(payment);
         AppUser collector = resolveCollector(payment.getCollector());
 
         AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
         applyLedger(client, saved);
-        issueReceiptIfCompleted(saved);
+        issueReceiptIfCompleted(saved, storeReceiptDocument);
         auditLogService.record("payment_created", "Registró pago", "PAYMENT", saved.getHashId(), after(saved));
         return withAllocations(saved);
     }
@@ -119,6 +128,7 @@ public class AppPaymentUseCase {
         AppPayment updated = paymentRepository.save(AppPayment.builder()
                 .id(existing.getId())
                 .hashId(existing.getHashId())
+                .importKey(existing.getImportKey())
                 .client(client)
                 .service(client.getService())
                 .amount(amount)
@@ -148,6 +158,7 @@ public class AppPaymentUseCase {
         paymentRepository.save(AppPayment.builder()
                 .id(existing.getId())
                 .hashId(existing.getHashId())
+                .importKey(existing.getImportKey())
                 .client(existing.getClient())
                 .service(existing.getService())
                 .amount(existing.getAmount())
@@ -173,6 +184,10 @@ public class AppPaymentUseCase {
     }
 
     private void issueReceiptIfCompleted(AppPayment payment) {
+        issueReceiptIfCompleted(payment, true);
+    }
+
+    private void issueReceiptIfCompleted(AppPayment payment, boolean storeDocument) {
         if (!isCompleted(payment) || payment.getClient() == null) {
             return;
         }
@@ -182,13 +197,13 @@ public class AppPaymentUseCase {
                 .filter(charge -> allocationRepository.sumAmountByChargeId(charge.getId()).signum() > 0)
                 .findFirst()
                 .orElse(null);
-        receiptUseCase.issueForPayment(payment, firstCharge);
+        receiptUseCase.issueForPayment(payment, firstCharge, storeDocument);
     }
 
     // ── Ledger ──────────────────────────────────────────────────────────────
 
     private void applyLedger(AppClient client, AppPayment payment) {
-        if (payment.getAmount() == null || payment.getAmount().signum() <= 0) {
+        if (!isCompleted(payment) || payment.getAmount() == null || payment.getAmount().signum() <= 0) {
             return;
         }
 
@@ -231,6 +246,7 @@ public class AppPaymentUseCase {
     private AppPayment buildNewPayment(AppPayment payment, AppClient client, AppUser collector) {
         return AppPayment.builder()
                 .hashId(UUID.randomUUID().toString())
+                .importKey(payment.getImportKey())
                 .client(client)
                 .service(client.getService())
                 .amount(payment.getAmount())

@@ -28,16 +28,12 @@ public class DbAppUserRepository implements AppUserRepository {
 
     @Override
     public Optional<AppUser> findByEmailAndStatus(String email, Long statusId) {
-        // En tu JpaRepository debes actualizar para buscar por tpStatus.typologyId
         return repository.findByEmailAndTpStatusInternalId(email, statusId).map(this::toDomain);
     }
 
     @Override
     public void updateLastLogin(Long userId) {
-        AppUserEntity user = repository.findById(userId).orElseThrow();
-        user.setLastLoginAt(LocalDateTime.now());
-        user.setUpdatedAt(LocalDateTime.now());
-        repository.save(user);
+        repository.updateLastLogin(userId, LocalDateTime.now());
     }
 
     @Override
