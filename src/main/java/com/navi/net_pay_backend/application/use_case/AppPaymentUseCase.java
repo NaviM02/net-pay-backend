@@ -107,9 +107,11 @@ public class AppPaymentUseCase {
         AppClient client = payment.getClient() != null && payment.getClient().getId() != null
                 ? resolveClient(payment)
                 : existing.getClient();
-        AppUser collector = payment.getCollector() != null && payment.getCollector().getId() != null
+        AppUser collector = payment.getCollector() != null
+                && (payment.getCollector().getId() != null
+                || (payment.getCollector().getHashId() != null && !payment.getCollector().getHashId().isBlank()))
                 ? resolveCollector(payment.getCollector())
-                : null;
+                : existing.getCollector();
         AdmTypology method = payment.getTpPaymentMethod() != null
                 ? payment.getTpPaymentMethod()
                 : existing.getTpPaymentMethod();
@@ -279,6 +281,10 @@ public class AppPaymentUseCase {
     private AppUser resolveCollector(AppUser collector) {
         if (collector == null) {
             return null;
+        }
+        if (collector.getHashId() != null && !collector.getHashId().isBlank()) {
+            return userRepository.findByPublicIdAndStatusNot(collector.getHashId(), TypologyEnum.DELETED.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("payment_collector_not_found"));
         }
         if (collector.getId() == null) {
             throw new DomainException("payment_collector_required");

@@ -1,6 +1,7 @@
 package com.navi.net_pay_backend.infrastructure.http.controller;
 
 import com.navi.net_pay_backend.application.use_case.AppPaymentUseCase;
+import com.navi.net_pay_backend.application.use_case.FileUploadUseCase;
 import com.navi.net_pay_backend.application.use_case.ReceiptUseCase;
 import com.navi.net_pay_backend.domain.dto.AppPaymentQueryDto;
 import com.navi.net_pay_backend.domain.dto.PaginatedResult;
@@ -11,10 +12,13 @@ import com.navi.net_pay_backend.infrastructure.http.dto.ReceiptResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.nio.charset.StandardCharsets;
 
 @RestController
 @RequestMapping("/api/payments")
@@ -23,11 +27,25 @@ public class AppPaymentController {
 
     private final AppPaymentUseCase paymentUseCase;
     private final ReceiptUseCase receiptUseCase;
+    private final FileUploadUseCase fileUpload;
     private final HttpMapper httpMapper;
 
     @GetMapping("/{hashId}")
     public ResponseEntity<AppPaymentResponseDto> findByHashId(@PathVariable String hashId) {
         return ResponseEntity.ok(httpMapper.toAppPaymentResponse(paymentUseCase.findByHashId(hashId)));
+    }
+
+    @GetMapping("/{hashId}/attachment")
+    public ResponseEntity<byte[]> attachment(@PathVariable String hashId) {
+        AppPayment payment = paymentUseCase.findByHashId(hashId);
+        var file = fileUpload.download(payment.getAttachmentUrl());
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(file.contentType()))
+                .header(HttpHeaders.CONTENT_DISPOSITION,
+                        org.springframework.http.ContentDisposition.inline()
+                                .filename(file.fileName(), StandardCharsets.UTF_8).build().toString())
+                .header("X-Content-Type-Options", "nosniff")
+                .body(file.content());
     }
 
     @GetMapping

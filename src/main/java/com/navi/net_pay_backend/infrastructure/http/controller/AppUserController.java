@@ -19,6 +19,7 @@ import com.navi.net_pay_backend.infrastructure.http.dto.AuditLogResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.MessageResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ChangePasswordRequestDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ResetTokenValidationDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ProfileUpdateRequestDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -65,6 +66,12 @@ public class AppUserController {
     @GetMapping("/me")
     public ResponseEntity<AppUserResponseDto> findMe() {
         return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.findMe()));
+    }
+
+    @PutMapping("/me")
+    public ResponseEntity<AppUserResponseDto> updateMe(@RequestBody ProfileUpdateRequestDto request) {
+        return ResponseEntity.ok(httpMapper.toAppUserResponse(
+                userUseCase.updateMe(request.fullName(), request.email())));
     }
 
     @PutMapping("/me/password")

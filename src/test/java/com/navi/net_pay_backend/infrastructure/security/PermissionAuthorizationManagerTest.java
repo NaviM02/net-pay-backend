@@ -18,6 +18,7 @@ class PermissionAuthorizationManagerTest {
         assertEquals("reports:export", permissions.requiredPermission("GET", "/api/reports/collections/export"));
         assertEquals("receipts:export", permissions.requiredPermission("GET", "/api/payments/uuid/receipt/pdf"));
         assertEquals("receipts:read", permissions.requiredPermission("GET", "/api/payments/uuid/receipt"));
+        assertEquals("payments:read", permissions.requiredPermission("GET", "/api/payments/uuid/attachment"));
         assertEquals("receipts:export", permissions.requiredPermission("POST", "/api/receipts/uuid/print"));
         assertEquals("clients:read", permissions.requiredPermission("GET", "/api/users/uuid/clients"));
         assertEquals("audit-logs:read", permissions.requiredPermission("GET", "/api/users/uuid/audit-logs"));
@@ -39,6 +40,7 @@ class PermissionAuthorizationManagerTest {
         assertFalse(allowed("POST", "/api/clients", "my-clients:read"));
         assertTrue(allowed("GET", "/api/payments", "my-payments:read"));
         assertTrue(allowed("GET", "/api/payments/uuid", "my-payments:read"));
+        assertTrue(allowed("GET", "/api/payments/uuid/attachment", "my-payments:read"));
         assertFalse(allowed("POST", "/api/payments/collector", "my-payments:read"));
         assertTrue(allowed("POST", "/api/payments/collector", "my-payments:create"));
         assertTrue(allowed("POST", "/api/files/upload", "any-existing-authority"));

@@ -33,6 +33,15 @@ public class AppUserUseCase {
         return userRepository.findByIdAndStatusNot(userId, TypologyEnum.DELETED.getId()).orElseThrow(() -> new DomainException("user_not_found"));
     }
 
+    @Transactional
+    public AppUser updateMe(String fullName, String email) {
+        AppUser currentUser = findMe();
+        return update(currentUser.getHashId(), AppUser.builder()
+                .fullName(fullName != null ? fullName : currentUser.getFullName())
+                .email(email != null ? email : currentUser.getEmail())
+                .build());
+    }
+
     public AppUser findByHashId(String hashId) {
         return userRepository.findByPublicIdAndStatusNot(hashId, TypologyEnum.DELETED.getId()).orElseThrow(() -> new DomainException("user_not_found"));
     }

@@ -2,6 +2,7 @@ package com.navi.net_pay_backend.application.use_case;
 
 import com.navi.net_pay_backend.domain.exception.DomainException;
 import com.navi.net_pay_backend.domain.service.FileStorageService;
+import com.navi.net_pay_backend.domain.service.model.DownloadedFile;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -17,5 +18,10 @@ public class FileUploadUseCase {
         if (content.length > MAX_SIZE_BYTES) throw new DomainException("file_too_large");
         if (!storage.isConfigured()) throw new DomainException("file_storage_not_configured");
         return storage.store(content).getUrl();
+    }
+
+    public DownloadedFile download(String url) {
+        if (url == null || url.isBlank()) throw new DomainException("payment_attachment_not_found");
+        return storage.download(url);
     }
 }
