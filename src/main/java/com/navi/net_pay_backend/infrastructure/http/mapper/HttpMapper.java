@@ -50,11 +50,9 @@ public class HttpMapper {
 
     public AppUserResponseDto toAppUserResponse(AppUser user) {
         return AppUserResponseDto.builder()
-                .id(user.getId())
                 .hashId(user.getHashId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
-                .tpRole(user.getTpRole())
                 .tpStatus(user.getTpStatus())
                 .lastLoginAt(user.getLastLoginAt())
                 .build();
@@ -107,6 +105,7 @@ public class HttpMapper {
                 .tpPaymentMethod(payment.getTpPaymentMethod())
                 .tpPaymentStatus(payment.getTpPaymentStatus())
                 .reference(payment.getReference())
+                .attachmentUrl(payment.getAttachmentUrl())
                 .comment(payment.getComment())
                 .allocations(payment.getAllocations() != null
                         ? payment.getAllocations().stream().map(this::toAppPaymentAllocation).toList()

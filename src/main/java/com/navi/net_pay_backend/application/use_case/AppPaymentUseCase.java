@@ -72,6 +72,7 @@ public class AppPaymentUseCase {
     private AppPayment createPayment(AppPayment payment, boolean storeReceiptDocument) {
         AppClient client = resolveClient(payment);
         validatePayment(payment);
+        validateAttachmentUrl(payment.getAttachmentUrl());
         AppUser collector = resolveCollector(payment.getCollector());
 
         AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
@@ -85,6 +86,7 @@ public class AppPaymentUseCase {
     public AppPayment createAsCollector(AppPayment payment) {
         AppClient client = resolveClient(payment);
         validatePayment(payment);
+        validateAttachmentUrl(payment.getAttachmentUrl());
         AppUser collector = currentCollector();
 
         AppPayment saved = paymentRepository.save(buildNewPayment(payment, client, collector));
@@ -122,6 +124,10 @@ public class AppPaymentUseCase {
                 .paidAt(paidAt)
                 .tpPaymentMethod(method)
                 .build());
+        String attachmentUrl = payment.getAttachmentUrl() != null
+                ? trimToNull(payment.getAttachmentUrl())
+                : existing.getAttachmentUrl();
+        validateAttachmentUrl(attachmentUrl);
 
         allocationRepository.deleteByPaymentId(existing.getId());
 
@@ -137,6 +143,7 @@ public class AppPaymentUseCase {
                 .tpPaymentMethod(method)
                 .tpPaymentStatus(status)
                 .reference(trimToNull(payment.getReference()))
+                .attachmentUrl(attachmentUrl)
                 .comment(trimToNull(payment.getComment()))
                 .createdAt(existing.getCreatedAt())
                 .build()
@@ -167,6 +174,7 @@ public class AppPaymentUseCase {
                 .tpPaymentMethod(existing.getTpPaymentMethod())
                 .tpPaymentStatus(AdmTypology.builder().internalId(TypologyEnum.DELETED.getId()).build())
                 .reference(existing.getReference())
+                .attachmentUrl(existing.getAttachmentUrl())
                 .comment(existing.getComment())
                 .createdAt(existing.getCreatedAt())
                 .deletedAt(LocalDateTime.now())
@@ -255,6 +263,7 @@ public class AppPaymentUseCase {
                 .tpPaymentMethod(payment.getTpPaymentMethod())
                 .tpPaymentStatus(resolveStatus(payment.getTpPaymentStatus()))
                 .reference(trimToNull(payment.getReference()))
+                .attachmentUrl(trimToNull(payment.getAttachmentUrl()))
                 .comment(trimToNull(payment.getComment()))
                 .build();
     }
@@ -324,6 +333,7 @@ public class AppPaymentUseCase {
         map.put("amount", payment.getAmount());
         map.put("paidAt", payment.getPaidAt() != null ? payment.getPaidAt().toString() : null);
         map.put("reference", payment.getReference());
+        map.put("attachmentUrl", payment.getAttachmentUrl());
         map.put("comment", payment.getComment());
         map.put("status", payment.getTpPaymentStatus() != null ? payment.getTpPaymentStatus().getInternalId() : null);
         map.put("method", payment.getTpPaymentMethod() != null ? payment.getTpPaymentMethod().getInternalId() : null);
@@ -355,5 +365,12 @@ public class AppPaymentUseCase {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    private void validateAttachmentUrl(String attachmentUrl) {
+        if (attachmentUrl != null && (attachmentUrl.length() > 2048
+                || !attachmentUrl.startsWith("https://res.cloudinary.com/"))) {
+            throw new DomainException("payment_attachment_url_invalid");
+        }
     }
 }

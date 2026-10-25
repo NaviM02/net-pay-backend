@@ -40,9 +40,8 @@ class ReportPerformanceTest {
         String email = java.util.UUID.randomUUID() + "@example.com";
         String password = java.util.UUID.randomUUID().toString();
         long id = jdbc.queryForObject("""
-                insert into app_user (hash_id, full_name, email, password_hash, tp_role, tp_status)
+                insert into app_user (hash_id, full_name, email, password_hash, tp_status)
                 values (?, 'Login performance test', ?, ?,
-                        (select typology_id from adm_typology where internal_id = 61),
                         (select typology_id from adm_typology where internal_id = 49)) returning id
                 """, Long.class, java.util.UUID.randomUUID().toString(), email, passwords.hash(password));
         measure("login", () -> assertNotNull(login.doLogin(

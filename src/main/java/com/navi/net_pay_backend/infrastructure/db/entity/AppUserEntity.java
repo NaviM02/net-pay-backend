@@ -53,7 +53,4 @@ public class AppUserEntity {
     @JoinColumn(name = "tp_status", referencedColumnName = "typology_id")
     private AdmTypologyEntity tpStatus;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "tp_role", referencedColumnName = "typology_id")
-    private AdmTypologyEntity tpRole;
 }

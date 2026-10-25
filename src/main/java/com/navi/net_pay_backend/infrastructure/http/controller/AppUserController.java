@@ -4,6 +4,7 @@ import com.navi.net_pay_backend.application.model.ForgotPasswordRequest;
 import com.navi.net_pay_backend.application.model.ResetPasswordRequest;
 import com.navi.net_pay_backend.application.use_case.AppClientUseCase;
 import com.navi.net_pay_backend.application.use_case.AppUserUseCase;
+import com.navi.net_pay_backend.application.use_case.ChangePasswordUseCase;
 import com.navi.net_pay_backend.application.use_case.AuditLogUseCase;
 import com.navi.net_pay_backend.application.use_case.PasswordResetUseCase;
 import com.navi.net_pay_backend.domain.dto.AppClientQueryDto;
@@ -13,8 +14,10 @@ import com.navi.net_pay_backend.domain.entity.AppClient;
 import com.navi.net_pay_backend.domain.entity.AppUser;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppClientResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AppUserResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.AppUserRequestDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.AuditLogResponseDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.MessageResponseDto;
+import com.navi.net_pay_backend.infrastructure.http.dto.ChangePasswordRequestDto;
 import com.navi.net_pay_backend.infrastructure.http.dto.ResetTokenValidationDto;
 import com.navi.net_pay_backend.infrastructure.http.mapper.HttpMapper;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +36,7 @@ public class AppUserController {
     private final AppClientUseCase clientUseCase;
     private final AuditLogUseCase auditLogUseCase;
     private final PasswordResetUseCase passwordResetUseCase;
+    private final ChangePasswordUseCase changePasswordUseCase;
     private final HttpMapper httpMapper;
 
     @PostMapping("/forgot-password")
@@ -61,6 +65,21 @@ public class AppUserController {
     @GetMapping("/me")
     public ResponseEntity<AppUserResponseDto> findMe() {
         return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.findMe()));
+    }
+
+    @PutMapping("/me/password")
+    public ResponseEntity<MessageResponseDto> changeOwnPassword(@RequestBody ChangePasswordRequestDto request) {
+        changePasswordUseCase.changeOwnPassword(request.toRequest());
+        return ResponseEntity.ok(MessageResponseDto.builder()
+                .message("Contraseña actualizada correctamente.").build());
+    }
+
+    @PutMapping("/{hashId}/password")
+    public ResponseEntity<MessageResponseDto> changeUserPassword(
+            @PathVariable String hashId, @RequestBody ChangePasswordRequestDto request) {
+        changePasswordUseCase.changeUserPassword(hashId, request.toRequest());
+        return ResponseEntity.ok(MessageResponseDto.builder()
+                .message("Contraseña actualizada correctamente.").build());
     }
 
     @GetMapping("/{hashId}/clients")
@@ -96,13 +115,13 @@ public class AppUserController {
     }
 
     @PostMapping
-    public ResponseEntity<AppUserResponseDto> create(@RequestBody AppUser user) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(httpMapper.toAppUserResponse(userUseCase.create(user)));
+    public ResponseEntity<AppUserResponseDto> create(@RequestBody AppUserRequestDto user) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(httpMapper.toAppUserResponse(userUseCase.create(user.toRequest().toUser())));
     }
 
     @PutMapping("/{hashId}")
-    public ResponseEntity<AppUserResponseDto> update(@PathVariable String hashId, @RequestBody AppUser user) {
-        return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.update(hashId, user)));
+    public ResponseEntity<AppUserResponseDto> update(@PathVariable String hashId, @RequestBody AppUserRequestDto user) {
+        return ResponseEntity.ok(httpMapper.toAppUserResponse(userUseCase.update(hashId, user.toRequest().toUser())));
     }
 
     @DeleteMapping("/{hashId}")

@@ -41,7 +41,7 @@ class DataImportUseCaseTest {
         userPaymentHandler = mock(UserPaymentImportHandler.class);
         importer = new DataImportUseCase(new AppServiceUseCase(services, audit),
                 new AppClientUseCase(clients, services, users, audit), services,
-                new ImportPartyResolver(mock(ImportLookupRepository.class), users), userPaymentHandler, transactions);
+                new ImportPartyResolver(mock(ImportLookupRepository.class), users, mock(AccessControlRepository.class)), userPaymentHandler, transactions);
     }
 
     @Test
@@ -105,7 +105,7 @@ class DataImportUseCaseTest {
 
     @Test
     void dispatchesUserAndPaymentFilesAndPassesDryRunToPaymentCreation() throws Exception {
-        when(userPaymentHandler.user(any())).thenReturn("user-uuid");
+        when(userPaymentHandler.user(any(), any())).thenReturn("user-uuid");
         when(userPaymentHandler.payment(any(), eq(true))).thenReturn("payment-uuid");
         assertEquals(12, importer.execute("users", example("users.csv"), true).successful());
         var payments = importer.execute("payments", example("payments.csv"), true);
@@ -115,8 +115,24 @@ class DataImportUseCaseTest {
     }
 
     @Test
+    void rejectsTheLegacyRoleColumnWhenImportingUsers() {
+        var legacyRole = new ImportRow(2, Map.of("fullName", "Legacy user", "email", "legacy@example.com", "role", "COLLECTOR"));
+        var error = assertThrows(com.navi.net_pay_backend.domain.exception.DomainException.class,
+                () -> importer.execute("users", List.of(legacyRole), true));
+        assertEquals("import_unknown_columns", error.getMessage());
+    }
+
+    @Test
+    void passesOptionalRoleHashIdFromImportRequestToEachUserRow() {
+        when(userPaymentHandler.user(any(), any())).thenReturn("user-uuid");
+        var row = new ImportRow(2, Map.of("fullName", "Selected role", "email", "selected@example.com"));
+        importer.execute("users", List.of(row), true, "custom-role-uuid");
+        verify(userPaymentHandler).user(row.values(), "custom-role-uuid");
+    }
+
+    @Test
     void duplicatesAreDetectedInUserAndPaymentPreviewsEvenAfterRollback() throws Exception {
-        when(userPaymentHandler.user(any())).thenReturn("user-uuid");
+        when(userPaymentHandler.user(any(), any())).thenReturn("user-uuid");
         when(userPaymentHandler.payment(any(), eq(true))).thenReturn("payment-uuid");
         var user = example("users.csv").get(0);
         var uppercase = new LinkedHashMap<>(user.values());

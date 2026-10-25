@@ -10,9 +10,6 @@ public enum TypologyEnum {
     DELETED(51L, 48L),
     LOCKED(52L, 48L),
     SUSPENDED(53L, 48L),
-    // ── User_Roles
-    ADMINISTRATOR(61L, 60L),
-    COLLECTOR(62L, 60L),
     // ── Service_Types
     RESIDENTIAL(71L, 70L),
     BUSINESS(72L, 70L),

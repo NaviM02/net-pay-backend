@@ -25,6 +25,7 @@ public class AppPaymentResponseDto {
     private AdmTypology tpPaymentMethod;
     private AdmTypology tpPaymentStatus;
     private String reference;
+    private String attachmentUrl;
     private String comment;
     private List<AppPaymentAllocationDto> allocations;
     private LocalDateTime createdAt;

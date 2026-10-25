@@ -51,11 +51,10 @@ public final class ImportFixtures {
     }
 
     private static void users(CSVPrinter csv) throws IOException {
-        csv.printRecord("fullName", "email", "password", "role", "status");
+        csv.printRecord("fullName", "email", "password", "status");
         for (int i = 1; i <= 12; i++) {
             csv.printRecord(i == 12 ? "Test Administrator" : "Test Collector " + i, "collector" + i + "@example.com",
-                    null, i == 12 ? "ADMINISTRATOR" : "COLLECTOR",
-                    i == 10 ? "INACTIVE" : i == 11 ? "SUSPENDED" : "ACTIVE");
+                    null, i == 10 ? "INACTIVE" : i == 11 ? "SUSPENDED" : "ACTIVE");
         }
     }
 

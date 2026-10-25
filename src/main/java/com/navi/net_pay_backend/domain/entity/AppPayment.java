@@ -22,6 +22,7 @@ public class AppPayment {
     private AdmTypology tpPaymentMethod;
     private AdmTypology tpPaymentStatus;
     private String reference;
+    private String attachmentUrl;
     private String comment;
     private List<PaymentAllocation> allocations;
     private LocalDateTime createdAt;

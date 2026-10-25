@@ -13,7 +13,6 @@ public class AppUser {
     private String fullName;
     private String email;
     private String password;
-    private AdmTypology tpRole;
     private AdmTypology tpStatus;
     private LocalDateTime lastLoginAt;
     private String resetTokenHash;

@@ -20,8 +20,8 @@ public interface AppPaymentJpaRepository extends JpaRepository<AppPaymentEntity,
 
     @Override
     @EntityGraph(attributePaths = {"client", "client.tpStatus", "client.service", "client.service.tpType",
-            "client.service.tpStatus", "client.collector", "client.collector.tpRole", "client.collector.tpStatus",
-            "service", "service.tpType", "service.tpStatus", "collector", "collector.tpRole", "collector.tpStatus",
+            "client.service.tpStatus", "client.collector", "client.collector.tpStatus",
+            "service", "service.tpType", "service.tpStatus", "collector", "collector.tpStatus",
             "tpPaymentMethod", "tpPaymentStatus"})
     Page<AppPaymentEntity> findAll(Specification<AppPaymentEntity> spec, Pageable pageable);
 

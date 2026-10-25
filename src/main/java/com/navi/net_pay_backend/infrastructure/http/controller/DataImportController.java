@@ -23,12 +23,13 @@ public class DataImportController {
     public ResponseEntity<ImportResponseDto> upload(@PathVariable String resource,
             @RequestParam("file") MultipartFile file,
             @RequestParam(defaultValue = "false") boolean dryRun,
-            @RequestParam(defaultValue = ",") String delimiter) {
+            @RequestParam(defaultValue = ",") String delimiter,
+            @RequestParam(required = false) String roleHashId) {
         if (file.isEmpty()) throw new DomainException("import_empty_file");
         if (file.getSize() > 5 * 1024 * 1024) throw new DomainException("import_file_too_large");
         if (delimiter.length() != 1) throw new DomainException("import_invalid_delimiter");
         try (var input = file.getInputStream()) {
-            var result = useCase.execute(resource, reader.read(input, file.getOriginalFilename(), delimiter.charAt(0)), dryRun);
+            var result = useCase.execute(resource, reader.read(input, file.getOriginalFilename(), delimiter.charAt(0)), dryRun, roleHashId);
             return ResponseEntity.ok(new ImportResponseDto(result.dryRun(), result.total(), result.successful(),
                     result.failed(), result.rows().stream().map(r -> new ImportResponseDto.RowResult(
                             r.row(), r.status(), r.hashId(), r.error())).toList()));

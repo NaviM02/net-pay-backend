@@ -19,6 +19,7 @@ import static com.navi.net_pay_backend.application.model.ImportValues.*;
 public class ImportPartyResolver {
     private final ImportLookupRepository lookup;
     private final AppUserRepository users;
+    private final com.navi.net_pay_backend.domain.repository.AccessControlRepository access;
 
     public AppClient client(Map<String, String> row) {
         String name = text(row, "clientName", 150);
@@ -39,11 +40,12 @@ public class ImportPartyResolver {
                     .orElseThrow(() -> new DomainException("import_collector_not_found"))
                 : users.findByIdAndStatusNot(unique(lookup.findUserIds(email, name), "collector"), TypologyEnum.DELETED.getId())
                     .orElseThrow(() -> new DomainException("import_collector_not_found"));
-        if (user.getTpRole() == null || !TypologyEnum.COLLECTOR.getId().equals(user.getTpRole().getInternalId())) {
-            throw new DomainException("import_collector_role_invalid");
-        }
         if (user.getTpStatus() == null || !TypologyEnum.ACTIVE.getId().equals(user.getTpStatus().getInternalId())) {
             throw new DomainException("import_collector_inactive");
+        }
+        var permissions = access.effectivePermissions(user.getId(), java.time.Instant.now());
+        if (!permissions.contains("payments:create") && !permissions.contains("my-payments:create")) {
+            throw new DomainException("import_collector_role_invalid");
         }
         return user;
     }
