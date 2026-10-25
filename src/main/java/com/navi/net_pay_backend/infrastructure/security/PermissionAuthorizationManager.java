@@ -21,6 +21,13 @@ public class PermissionAuthorizationManager implements AuthorizationManager<Requ
         if (Set.of("/api/users/me", "/api/auth/access").contains(path)) return new AuthorizationDecision(true);
         String method = context.getRequest().getMethod();
         if ("PUT".equals(method) && "/api/users/me/password".equals(path)) return new AuthorizationDecision(true);
+        if ("POST".equals(method) && "/api/files/upload".equals(path)) return new AuthorizationDecision(true);
+        // The user CSV importer needs the available roles to let a roles:update
+        // operator choose a roleHashId. Keep the dedicated role catalog read grant
+        // for everyone else; this exception is limited to the role collection.
+        if ("GET".equals(method) && "/api/roles".equals(path)
+                && auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("roles:update")))
+            return new AuthorizationDecision(true);
         boolean read = Set.of("GET", "HEAD").contains(method);
         // Developer-managed lookup values are readable by any authenticated user.
         if (read && path.startsWith("/api/typologies/")) return new AuthorizationDecision(true);

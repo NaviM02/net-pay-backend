@@ -56,6 +56,9 @@ public class AppPaymentEntity {
     @Column(name = "reference", length = 255)
     private String reference;
 
+    @Column(name = "attachment_url", length = 2048)
+    private String attachmentUrl;
+
     @Column(name = "comment", length = 500)
     private String comment;
 

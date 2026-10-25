@@ -161,6 +161,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
         entity.setAmount(payment.getAmount());
         entity.setPaidAt(payment.getPaidAt());
         entity.setReference(payment.getReference());
+        entity.setAttachmentUrl(payment.getAttachmentUrl());
         entity.setComment(payment.getComment());
         entity.setDeletedAt(payment.getDeletedAt());
 
@@ -217,6 +218,7 @@ public class DbAppPaymentRepository implements AppPaymentRepository {
                 .amount(entity.getAmount())
                 .paidAt(entity.getPaidAt())
                 .reference(entity.getReference())
+                .attachmentUrl(entity.getAttachmentUrl())
                 .comment(entity.getComment())
                 .client(toDomain(entity.getClient(), counts))
                 .service(toDomain(entity.getService(), counts))

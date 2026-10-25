@@ -105,6 +105,7 @@ public class HttpMapper {
                 .tpPaymentMethod(payment.getTpPaymentMethod())
                 .tpPaymentStatus(payment.getTpPaymentStatus())
                 .reference(payment.getReference())
+                .attachmentUrl(payment.getAttachmentUrl())
                 .comment(payment.getComment())
                 .allocations(payment.getAllocations() != null
                         ? payment.getAllocations().stream().map(this::toAppPaymentAllocation).toList()

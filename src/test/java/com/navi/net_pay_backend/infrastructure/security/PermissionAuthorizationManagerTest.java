@@ -41,6 +41,9 @@ class PermissionAuthorizationManagerTest {
         assertTrue(allowed("GET", "/api/payments/uuid", "my-payments:read"));
         assertFalse(allowed("POST", "/api/payments/collector", "my-payments:read"));
         assertTrue(allowed("POST", "/api/payments/collector", "my-payments:create"));
+        assertTrue(allowed("POST", "/api/files/upload", "any-existing-authority"));
+        var unauthenticated = new RequestAuthorizationContext(new MockHttpServletRequest("POST", "/api/files/upload"));
+        assertFalse(permissions.authorize(() -> null, unauthenticated).isGranted());
         assertFalse(allowed("POST", "/api/payments", "my-payments:create"));
         assertFalse(allowed("PUT", "/api/payments/uuid", "my-payments:create"));
         assertFalse(allowed("DELETE", "/api/payments/uuid", "my-payments:create"));
@@ -50,6 +53,13 @@ class PermissionAuthorizationManagerTest {
         assertTrue(allowed("GET", "/api/payments", "payments:read"));
         assertTrue(allowed("POST", "/api/payments/collector", "payments:create"));
         assertFalse(allowed("GET", "/api/roles", "my-dashboard:read"));
+    }
+
+    @Test
+    void roleUpdaterCanLoadRoleOptionsForUserImportWithoutRoleReadGrant() {
+        assertTrue(allowed("GET", "/api/roles", "roles:update"));
+        assertFalse(allowed("GET", "/api/roles/uuid", "roles:update"));
+        assertFalse(allowed("GET", "/api/roles", "users:import"));
     }
 
     @Test
