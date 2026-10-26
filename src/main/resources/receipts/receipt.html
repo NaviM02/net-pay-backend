@@ -1,0 +1,260 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Recibo {{receiptNumber}}</title>
+    <style>
+        @page {
+            size: A4;
+            margin: 42px 46px;
+        }
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            font-family: "Carlito", sans-serif;
+            color: #1f2937;
+            font-size: 12px;
+            margin: 0;
+        }
+        .header {
+            width: 100%;
+            border-bottom: 3px solid #4f46e5;
+            padding-bottom: 16px;
+            margin-bottom: 26px;
+        }
+        .header td {
+            vertical-align: middle;
+        }
+        .brand {
+            font-size: 30px;
+            font-weight: bold;
+            color: #4f46e5;
+            letter-spacing: 3px;
+        }
+        .brand-sub {
+            color: #6b7280;
+            font-size: 11px;
+            letter-spacing: 1px;
+            margin-top: 2px;
+        }
+        .doc-title {
+            text-align: right;
+        }
+        .doc-title .label {
+            font-size: 20px;
+            font-weight: bold;
+            color: #111827;
+        }
+        .doc-title .number {
+            font-size: 13px;
+            color: #4f46e5;
+            font-weight: bold;
+            margin-top: 4px;
+        }
+        .meta {
+            width: 100%;
+            margin-bottom: 24px;
+        }
+        .meta td {
+            vertical-align: top;
+            width: 50%;
+        }
+        .panel {
+            background: #f9fafb;
+            border: 1px solid #e5e7eb;
+            border-radius: 6px;
+            padding: 14px 16px;
+        }
+        .panel + .panel {
+            margin-left: 14px;
+        }
+        .panel h3 {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #6b7280;
+            margin: 0 0 8px 0;
+        }
+        .panel .row {
+            margin-bottom: 5px;
+        }
+        .panel .row .k {
+            color: #6b7280;
+            display: inline-block;
+            width: 92px;
+        }
+        .panel .row .v {
+            font-weight: bold;
+            color: #111827;
+        }
+        table.items {
+            width: 100%;
+            border-collapse: collapse;
+            margin-bottom: 20px;
+        }
+        table.items thead th {
+            background: #4f46e5;
+            color: #ffffff;
+            font-size: 11px;
+            text-align: left;
+            padding: 10px 12px;
+        }
+        table.items thead th.right {
+            text-align: right;
+        }
+        table.items tbody td {
+            padding: 12px;
+            border-bottom: 1px solid #e5e7eb;
+        }
+        table.items tbody td.right {
+            text-align: right;
+        }
+        .total-box {
+            width: 100%;
+            margin-top: 6px;
+        }
+        .total-box td {
+            vertical-align: top;
+        }
+        .total-label {
+            text-align: right;
+            font-size: 14px;
+            color: #6b7280;
+            padding-right: 14px;
+            padding-top: 10px;
+        }
+        .total-value {
+            background: #eef2ff;
+            border: 1px solid #c7d2fe;
+            border-radius: 6px;
+            padding: 14px 20px;
+            text-align: right;
+            width: 220px;
+        }
+        .total-value .amount {
+            font-size: 24px;
+            font-weight: bold;
+            color: #4f46e5;
+        }
+        .total-value .currency {
+            font-size: 10px;
+            color: #6b7280;
+            letter-spacing: 1px;
+        }
+        .footer {
+            margin-top: 46px;
+            border-top: 1px solid #e5e7eb;
+            padding-top: 14px;
+            color: #9ca3af;
+            font-size: 10px;
+            text-align: center;
+        }
+        .signature {
+            margin-top: 54px;
+            width: 100%;
+        }
+        .signature td {
+            text-align: center;
+            width: 50%;
+        }
+        .signature .line {
+            border-top: 1px solid #9ca3af;
+            width: 200px;
+            margin: 0 auto 6px auto;
+        }
+        .signature .name {
+            color: #6b7280;
+            font-size: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<table class="header">
+    <tr>
+        <td>
+            <div class="brand">GRAVITY</div>
+            <div class="brand-sub">SERVICIOS DE INTERNET &amp; TELECOMUNICACIONES</div>
+        </td>
+        <td class="doc-title">
+            <div class="label">RECIBO DE PAGO</div>
+            <div class="number">N° {{receiptNumber}}</div>
+        </td>
+    </tr>
+</table>
+
+<table class="meta">
+    <tr>
+        <td>
+            <div class="panel">
+                <h3>Cliente</h3>
+                <div class="row"><span class="k">Nombre:</span> <span class="v">{{clientName}}</span></div>
+                <div class="row"><span class="k">Contacto:</span> <span class="v">{{clientContact}}</span></div>
+                <div class="row"><span class="k">Correo:</span> <span class="v">{{clientEmail}}</span></div>
+            </div>
+        </td>
+        <td>
+            <div class="panel">
+                <h3>Detalles del recibo</h3>
+                <div class="row"><span class="k">Emitido:</span> <span class="v">{{issuedAt}}</span></div>
+                <div class="row"><span class="k">Período:</span> <span class="v">{{period}}</span></div>
+                <div class="row"><span class="k">Cobrador:</span> <span class="v">{{collectorName}}</span></div>
+            </div>
+        </td>
+    </tr>
+</table>
+
+<table class="items">
+    <thead>
+        <tr>
+            <th>Descripción</th>
+            <th>Fecha de pago</th>
+            <th>Método</th>
+            <th>Referencia</th>
+            <th class="right">Monto</th>
+        </tr>
+    </thead>
+    <tbody>
+        <tr>
+            <td>Servicio de internet — período {{period}}</td>
+            <td>{{paidAt}}</td>
+            <td>{{method}}</td>
+            <td>{{reference}}</td>
+            <td class="right">Q {{amount}}</td>
+        </tr>
+    </tbody>
+</table>
+
+<table class="total-box">
+    <tr>
+        <td class="total-label">TOTAL PAGADO</td>
+        <td class="total-value">
+            <div class="amount">Q {{amount}}</div>
+            <div class="currency">QUETZALES</div>
+        </td>
+    </tr>
+</table>
+
+<table class="signature">
+    <tr>
+        <td>
+            <div class="line"></div>
+            <div class="name">{{collectorName}}</div>
+            <div class="name">Recibido por</div>
+        </td>
+        <td>
+            <div class="line"></div>
+            <div class="name">{{clientName}}</div>
+            <div class="name">Cliente</div>
+        </td>
+    </tr>
+</table>
+
+<div class="footer">
+    Gracias por su pago. Este recibo es un comprobante oficial emitido por GRAVITY.<br/>
+    Recibo {{receiptNumber}} — generado el {{issuedAt}}.
+</div>
+
+</body>
+</html>

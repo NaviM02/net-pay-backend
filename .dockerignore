@@ -1,0 +1,14 @@
+target/
+target-root-owned/
+.git/
+.gitignore
+.idea/
+*.iml
+*.iws
+*.ipr
+.vscode/
+.env
+docs/
+*.md
+mvnw.cmd
+HELP.md
