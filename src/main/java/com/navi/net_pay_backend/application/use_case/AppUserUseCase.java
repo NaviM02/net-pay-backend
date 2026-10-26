@@ -34,11 +34,12 @@ public class AppUserUseCase {
     }
 
     @Transactional
-    public AppUser updateMe(String fullName, String email) {
+    public AppUser updateMe(String fullName, String email, Boolean twoFactorEnabled) {
         AppUser currentUser = findMe();
         return update(currentUser.getHashId(), AppUser.builder()
                 .fullName(fullName != null ? fullName : currentUser.getFullName())
                 .email(email != null ? email : currentUser.getEmail())
+                .twoFactorEnabled(twoFactorEnabled)
                 .build());
     }
 
@@ -65,6 +66,7 @@ public class AppUserUseCase {
                 .fullName(user.getFullName())
                 .email(user.getEmail())
                 .password(passwordHashService.hash(user.getPassword()))
+                .twoFactorEnabled(Boolean.TRUE.equals(user.getTwoFactorEnabled()))
                 .tpStatus(user.getTpStatus() == null ? AdmTypology.builder().internalId(TypologyEnum.ACTIVE.getId()).build() : user.getTpStatus())
                 .build();
 
@@ -93,6 +95,8 @@ public class AppUserUseCase {
                 .fullName(userDetails.getFullName())
                 .email(email)
                 .password(existingUser.getPassword())
+                .twoFactorEnabled(userDetails.getTwoFactorEnabled() != null
+                        ? userDetails.getTwoFactorEnabled() : existingUser.getTwoFactorEnabled())
                 .tpStatus(userDetails.getTpStatus() != null ? userDetails.getTpStatus() : existingUser.getTpStatus())
                 .lastLoginAt(existingUser.getLastLoginAt())
                 .resetTokenHash(existingUser.getResetTokenHash())
@@ -132,6 +136,7 @@ public class AppUserUseCase {
         Map<String, Object> map = new LinkedHashMap<>();
         map.put("fullName", user.getFullName());
         map.put("email", user.getEmail());
+        map.put("twoFactorEnabled", Boolean.TRUE.equals(user.getTwoFactorEnabled()));
         map.put("status", user.getTpStatus() != null ? user.getTpStatus().getInternalId() : null);
         return map;
     }

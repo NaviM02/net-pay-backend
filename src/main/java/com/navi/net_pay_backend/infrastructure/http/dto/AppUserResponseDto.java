@@ -15,6 +15,7 @@ public class AppUserResponseDto {
     private String hashId;
     private String fullName;
     private String email;
+    private boolean twoFactorEnabled;
     private AdmTypology tpStatus;
     private LocalDateTime lastLoginAt;
 }

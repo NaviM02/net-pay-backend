@@ -53,6 +53,7 @@ public class SecurityConfig {
                         .requestMatchers(
                                 "/health",
                                 "/api/auth/login",
+                                "/api/auth/2fa/verify",
                                 "/api/users/forgot-password",
                                 "/api/users/reset-password",
                                 "/api/users/reset-password/validate"
@@ -94,7 +95,7 @@ public class SecurityConfig {
 
         // Cabeceras permitidas (Importantísimo incluir Authorization para los Tokens)
         configuration.setAllowedHeaders(Arrays.asList("Authorization", "Content-Type", "X-Requested-With", "Accept", "Origin"));
-        configuration.setExposedHeaders(Arrays.asList("X-Total-Count", "Authorization"));
+        configuration.setExposedHeaders(Arrays.asList("X-Total-Count", "Authorization", "Content-Disposition"));
 
         // Permitir el envío de credenciales/cookies si fuera necesario en el futuro
         configuration.setAllowCredentials(true);

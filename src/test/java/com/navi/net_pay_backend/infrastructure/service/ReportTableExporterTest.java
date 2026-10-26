@@ -2,6 +2,9 @@ package com.navi.net_pay_backend.infrastructure.service;
 
 import com.navi.net_pay_backend.domain.dto.ReportTable;
 import org.junit.jupiter.api.Test;
+import org.apache.poi.hssf.usermodel.HSSFWorkbook;
+import org.apache.poi.ss.usermodel.CellType;
+import java.io.ByteArrayInputStream;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
@@ -11,7 +14,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ReportTableExporterTest {
 
     private final HtmlReportTablePdfExporter pdfExporter = new HtmlReportTablePdfExporter();
-    private final CsvReportTableExporter csvExporter = new CsvReportTableExporter();
 
     private ReportTable sampleTable() {
         return ReportTable.builder()
@@ -34,12 +36,23 @@ class ReportTableExporterTest {
     }
 
     @Test
-    void csvExporter_writesBomHeadersAndEscapedRows() {
-        byte[] csv = csvExporter.export(sampleTable());
-        String text = new String(csv, StandardCharsets.UTF_8);
+    void xlsExporterCreatesNativeWorkbookWithNumericAmountsAndUnicodeText() throws Exception {
+        byte[] bytes = new XlsReportTableExporter().export(sampleTable());
+        try (HSSFWorkbook workbook = new HSSFWorkbook(new ByteArrayInputStream(bytes))) {
+            var sheet = workbook.getSheetAt(0);
+            assertThat(sheet.getRow(3).getCell(2).getStringCellValue()).isEqualTo("Deuda total");
+            assertThat(sheet.getRow(4).getCell(2).getCellType()).isEqualTo(CellType.NUMERIC);
+            assertThat(sheet.getRow(4).getCell(2).getNumericCellValue()).isEqualTo(7200.0);
+            assertThat(sheet.getRow(5).getCell(0).getStringCellValue()).isEqualTo("Café; Central");
+        }
+    }
 
-        assertThat(text).startsWith("\uFEFF");
-        assertThat(text).contains("Cliente;Contacto;Deuda total");
-        assertThat(text).contains("\"Café; Central\";Juan <Pérez>;1500.50");
+    @Test
+    void xlsExporterDoesNotInterpretUserTextAsFormulas() throws Exception {
+        var table = ReportTable.builder().title("Reporte").subtitle("").headers(List.of("Cliente"))
+                .rows(List.of(List.of("=1+1"))).build();
+        try (var workbook = new HSSFWorkbook(new ByteArrayInputStream(new XlsReportTableExporter().export(table)))) {
+            assertThat(workbook.getSheetAt(0).getRow(4).getCell(0).getCellType()).isEqualTo(CellType.STRING);
+        }
     }
 }

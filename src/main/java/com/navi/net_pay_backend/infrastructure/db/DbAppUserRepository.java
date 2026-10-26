@@ -131,6 +131,7 @@ public class DbAppUserRepository implements AppUserRepository {
         entity.setFullName(user.getFullName());
         entity.setEmail(user.getEmail());
         entity.setPassword(user.getPassword());
+        entity.setTwoFactorEnabled(Boolean.TRUE.equals(user.getTwoFactorEnabled()));
         entity.setResetTokenHash(user.getResetTokenHash());
         entity.setResetTokenExpiresAt(user.getResetTokenExpiresAt());
 
@@ -173,6 +174,7 @@ public class DbAppUserRepository implements AppUserRepository {
                 .fullName(entity.getFullName())
                 .email(entity.getEmail())
                 .password(entity.getPassword())
+                .twoFactorEnabled(entity.isTwoFactorEnabled())
                 .tpStatus(statusDto)
                 .lastLoginAt(entity.getLastLoginAt())
                 .resetTokenHash(entity.getResetTokenHash())

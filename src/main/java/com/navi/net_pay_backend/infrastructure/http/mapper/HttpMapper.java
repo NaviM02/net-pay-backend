@@ -53,6 +53,7 @@ public class HttpMapper {
                 .hashId(user.getHashId())
                 .fullName(user.getFullName())
                 .email(user.getEmail())
+                .twoFactorEnabled(Boolean.TRUE.equals(user.getTwoFactorEnabled()))
                 .tpStatus(user.getTpStatus())
                 .lastLoginAt(user.getLastLoginAt())
                 .build();

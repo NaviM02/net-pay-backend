@@ -18,7 +18,6 @@ import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -28,7 +27,7 @@ import java.util.List;
 public class ReportController {
 
     private static final String PDF = "pdf";
-    private static final String CSV = "csv";
+    private static final String XLS = "xls";
 
     private final ReportUseCase reportUseCase;
     private final HttpMapper httpMapper;
@@ -48,12 +47,12 @@ public class ReportController {
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate fromDate,
             @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate toDate,
             @RequestParam(defaultValue = "10") int collectorLimit,
-            @RequestParam(defaultValue = CSV) String format
+            @RequestParam(defaultValue = XLS) String format
     ) {
         String normalized = normalizeFormat(format);
         byte[] body = PDF.equals(normalized)
                 ? reportUseCase.exportCollectionsPdf(fromDate, toDate, collectorLimit)
-                : reportUseCase.exportCollectionsCsv(fromDate, toDate, collectorLimit);
+                : reportUseCase.exportCollectionsXls(fromDate, toDate, collectorLimit);
         return exportResponse(body, normalized, "reporte-cobros-por-periodo");
     }
 
@@ -73,21 +72,21 @@ public class ReportController {
     @GetMapping("/overdue-clients/export")
     public ResponseEntity<byte[]> overdueClientsExport(
             @ModelAttribute OverdueClientQueryDto queryDto,
-            @RequestParam(defaultValue = CSV) String format
+            @RequestParam(defaultValue = XLS) String format
     ) {
         String normalized = normalizeFormat(format);
         byte[] body = PDF.equals(normalized)
                 ? reportUseCase.exportOverdueClientsPdf(queryDto)
-                : reportUseCase.exportOverdueClientsCsv(queryDto);
+                : reportUseCase.exportOverdueClientsXls(queryDto);
         return exportResponse(body, normalized, "reporte-clientes-en-mora");
     }
 
     private String normalizeFormat(String format) {
         if (format == null) {
-            return CSV;
+            return XLS;
         }
         String normalized = format.trim().toLowerCase();
-        if (!PDF.equals(normalized) && !CSV.equals(normalized)) {
+        if (!PDF.equals(normalized) && !XLS.equals(normalized)) {
             throw new DomainException("unsupported_report_format");
         }
         return normalized;
@@ -100,9 +99,9 @@ public class ReportController {
             headers.setContentDisposition(ContentDisposition.attachment()
                     .filename(basename + ".pdf").build());
         } else {
-            headers.setContentType(new MediaType("text", "csv", StandardCharsets.UTF_8));
+            headers.setContentType(MediaType.parseMediaType("application/vnd.ms-excel"));
             headers.setContentDisposition(ContentDisposition.attachment()
-                    .filename(basename + ".csv").build());
+                    .filename(basename + ".xls").build());
         }
         return new ResponseEntity<>(body, headers, HttpStatus.OK);
     }

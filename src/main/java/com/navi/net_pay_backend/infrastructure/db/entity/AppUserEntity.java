@@ -31,6 +31,9 @@ public class AppUserEntity {
     @Column(name = "password_hash", nullable = false, length = 255)
     private String password;
 
+    @Column(name = "two_factor_enabled", nullable = false)
+    private boolean twoFactorEnabled;
+
     @Column(name = "last_login_at")
     private LocalDateTime lastLoginAt;
 

@@ -73,7 +73,7 @@ public class AppUserController {
     @PutMapping("/me")
     public ResponseEntity<AppUserResponseDto> updateMe(@RequestBody ProfileUpdateRequestDto request) {
         return ResponseEntity.ok(httpMapper.toAppUserResponse(
-                userUseCase.updateMe(request.fullName(), request.email())));
+                userUseCase.updateMe(request.fullName(), request.email(), request.twoFactorEnabled())));
     }
 
     @PutMapping("/me/password")

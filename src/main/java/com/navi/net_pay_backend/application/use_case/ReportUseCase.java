@@ -8,7 +8,7 @@ import com.navi.net_pay_backend.domain.dto.PaginatedResult;
 import com.navi.net_pay_backend.domain.dto.ReportTable;
 import com.navi.net_pay_backend.domain.repository.ClientChargeRepository;
 import com.navi.net_pay_backend.domain.repository.ReportRepository;
-import com.navi.net_pay_backend.domain.service.ReportTableCsvExporter;
+import com.navi.net_pay_backend.domain.service.ReportTableXlsExporter;
 import com.navi.net_pay_backend.domain.service.ReportTablePdfExporter;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -25,7 +25,7 @@ public class ReportUseCase {
     private final ReportRepository reportRepository;
     private final ClientChargeRepository chargeRepository;
     private final ReportTablePdfExporter pdfExporter;
-    private final ReportTableCsvExporter csvExporter;
+    private final ReportTableXlsExporter xlsExporter;
 
     public CollectionReportView collections(LocalDate from, LocalDate to, int collectorLimit) {
         LocalDate[] range = normalizeRange(from, to);
@@ -48,16 +48,16 @@ public class ReportUseCase {
         return pdfExporter.export(collectionsTable(collections(from, to, collectorLimit)));
     }
 
-    public byte[] exportCollectionsCsv(LocalDate from, LocalDate to, int collectorLimit) {
-        return csvExporter.export(collectionsTable(collections(from, to, collectorLimit)));
+    public byte[] exportCollectionsXls(LocalDate from, LocalDate to, int collectorLimit) {
+        return xlsExporter.export(collectionsTable(collections(from, to, collectorLimit)));
     }
 
     public byte[] exportOverdueClientsPdf(OverdueClientQueryDto queryDto) {
         return pdfExporter.export(overdueClientsTable(filteredOverdueClients(queryDto)));
     }
 
-    public byte[] exportOverdueClientsCsv(OverdueClientQueryDto queryDto) {
-        return csvExporter.export(overdueClientsTable(filteredOverdueClients(queryDto)));
+    public byte[] exportOverdueClientsXls(OverdueClientQueryDto queryDto) {
+        return xlsExporter.export(overdueClientsTable(filteredOverdueClients(queryDto)));
     }
 
     private ReportTable collectionsTable(CollectionReportView view) {
