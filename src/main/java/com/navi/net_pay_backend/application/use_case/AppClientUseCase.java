@@ -56,6 +56,7 @@ public class AppClientUseCase {
     public AppClient create(AppClient client) {
         validateRequiredFields(client);
         validateBusinessNameAvailable(client.getBusinessName(), null);
+        AppUser collector = resolveCollector(client.getCollector());
 
         AppClient saved = clientRepository.save(AppClient.builder()
                 .hashId(UUID.randomUUID().toString())
@@ -68,7 +69,7 @@ public class AppClientUseCase {
                 .longitude(client.getLongitude())
                 .customerSince(client.getCustomerSince() != null ? client.getCustomerSince() : LocalDate.now())
                 .service(client.getService())
-                .collector(client.getCollector())
+                .collector(collector)
                 .tpStatus(resolveStatus(client.getTpStatus()))
                 .build()
         );
@@ -82,6 +83,7 @@ public class AppClientUseCase {
 
         validateRequiredFields(client);
         validateBusinessNameAvailable(client.getBusinessName(), existing.getId());
+        AppUser collector = resolveCollector(client.getCollector());
 
         AppClient saved = clientRepository.save(AppClient.builder()
                 .id(existing.getId())
@@ -95,7 +97,7 @@ public class AppClientUseCase {
                 .longitude(client.getLongitude())
                 .customerSince(client.getCustomerSince() != null ? client.getCustomerSince() : existing.getCustomerSince())
                 .service(client.getService())
-                .collector(client.getCollector())
+                .collector(collector)
                 .tpStatus(existing.getTpStatus())
                 .createdAt(existing.getCreatedAt())
                 .build()
@@ -129,6 +131,31 @@ public class AppClientUseCase {
                 .createdAt(existing.getCreatedAt())
                 .build()
         );
+    }
+
+    public AppClient assignCollectorByHashId(String hashId, String collectorHashId) {
+        AppClient existing = findByHashId(hashId);
+        AppUser collector = collectorHashId != null && !collectorHashId.isBlank()
+                ? userRepository.findByPublicIdAndStatusNot(collectorHashId, TypologyEnum.DELETED.getId())
+                        .orElseThrow(() -> new EntityNotFoundException("client_collector_not_found"))
+                : null;
+
+        return clientRepository.save(existing.toBuilder().collector(collector).build());
+    }
+
+    private AppUser resolveCollector(AppUser collector) {
+        if (collector == null) {
+            return null;
+        }
+        if (collector.getHashId() != null && !collector.getHashId().isBlank()) {
+            return userRepository.findByPublicIdAndStatusNot(collector.getHashId(), TypologyEnum.DELETED.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("client_collector_not_found"));
+        }
+        if (collector.getId() != null) {
+            return userRepository.findByIdAndStatusNot(collector.getId(), TypologyEnum.DELETED.getId())
+                    .orElseThrow(() -> new EntityNotFoundException("client_collector_not_found"));
+        }
+        throw new EntityNotFoundException("client_collector_not_found");
     }
 
     @Transactional

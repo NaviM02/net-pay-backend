@@ -56,7 +56,7 @@ public class AppClientController {
             @PathVariable String hashId,
             @RequestBody CollectorAssignmentRequest request
     ) {
-        AppClient updated = appClientUseCase.assignCollector(hashId, request.getCollectorId());
+        AppClient updated = appClientUseCase.assignCollectorByHashId(hashId, request.getCollectorHashId());
         return ResponseEntity.ok(httpMapper.toAppClientResponse(updated));
     }
 

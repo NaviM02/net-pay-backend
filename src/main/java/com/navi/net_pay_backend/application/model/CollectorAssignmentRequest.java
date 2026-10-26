@@ -11,5 +11,5 @@ import lombok.Setter;
 @Builder
 @AllArgsConstructor @NoArgsConstructor
 public class CollectorAssignmentRequest {
-    private Long collectorId;
+    private String collectorHashId;
 }
