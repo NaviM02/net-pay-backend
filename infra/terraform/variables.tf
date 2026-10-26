@@ -26,11 +26,6 @@ variable "github_repository" {
     error_message = "Enter only the GitHub repository name."
   }
 }
-variable "existing_github_oidc_provider_arn" {
-  type        = string
-  default     = null
-  description = "Set this if token.actions.githubusercontent.com provider already exists in this AWS account."
-}
 variable "acme_email" {
   type        = string
   description = "Contact email used by Caddy/Let's Encrypt."

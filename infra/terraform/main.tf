@@ -8,14 +8,13 @@ data "aws_ssm_parameter" "amazon_linux_2023" {
 }
 
 locals {
-  account_id      = data.aws_caller_identity.current.account_id
-  partition       = data.aws_partition.current.partition
-  repo_name       = "${var.project_name}-backend"
-  repo_arn        = aws_ecr_repository.backend.arn
-  parameter_arn   = "arn:${local.partition}:ssm:${var.aws_region}:${local.account_id}:parameter${var.runtime_parameter_name}"
-  instance_arn    = "arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:instance/${aws_instance.backend.id}"
-  deploy_doc_arn  = "arn:${local.partition}:ssm:${var.aws_region}:${local.account_id}:document/${aws_ssm_document.deploy.name}"
-  github_oidc_arn = var.existing_github_oidc_provider_arn != null ? var.existing_github_oidc_provider_arn : aws_iam_openid_connect_provider.github[0].arn
+  account_id     = data.aws_caller_identity.current.account_id
+  partition      = data.aws_partition.current.partition
+  repo_name      = "${var.project_name}-backend"
+  repo_arn       = aws_ecr_repository.backend.arn
+  parameter_arn  = "arn:${local.partition}:ssm:${var.aws_region}:${local.account_id}:parameter${var.runtime_parameter_name}"
+  instance_arn   = "arn:${local.partition}:ec2:${var.aws_region}:${local.account_id}:instance/${aws_instance.backend.id}"
+  deploy_doc_arn = "arn:${local.partition}:ssm:${var.aws_region}:${local.account_id}:document/${aws_ssm_document.deploy.name}"
 }
 
 resource "aws_vpc" "main" {
@@ -190,28 +189,14 @@ resource "aws_ssm_document" "deploy" {
   })
 }
 
-resource "aws_iam_openid_connect_provider" "github" {
-  count          = var.existing_github_oidc_provider_arn == null ? 1 : 0
-  url            = "https://token.actions.githubusercontent.com"
-  client_id_list = ["sts.amazonaws.com"]
+resource "aws_iam_user" "github_actions" {
+  name = "${var.project_name}-github-actions"
+  path = "/"
 }
-resource "aws_iam_role" "github_actions" {
-  name = "${var.project_name}-github-deploy"
-  assume_role_policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [{
-      Effect = "Allow", Principal = { Federated = local.github_oidc_arn }
-      Action = "sts:AssumeRoleWithWebIdentity"
-      Condition = { StringEquals = {
-        "token.actions.githubusercontent.com:aud" = "sts.amazonaws.com"
-        "token.actions.githubusercontent.com:sub" = "repo:${var.github_owner}/${var.github_repository}:ref:refs/heads/main"
-      } }
-    }]
-  })
-}
-resource "aws_iam_role_policy" "github_actions" {
+
+resource "aws_iam_user_policy" "github_actions" {
   name = "${var.project_name}-deploy"
-  role = aws_iam_role.github_actions.id
+  user = aws_iam_user.github_actions.name
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [
