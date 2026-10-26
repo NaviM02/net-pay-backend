@@ -23,6 +23,13 @@ compose=(docker compose --project-directory /etc/netpay --env-file "$CONFIG" -f 
 "${compose[@]}" config --quiet
 "${compose[@]}" pull app
 "${compose[@]}" up -d --wait --wait-timeout 300
-curl --fail --silent --show-error --connect-timeout 5 --max-time 15 \
-  --retry 12 --retry-delay 5 --retry-all-errors "https://$API_HOST/health" >/dev/null
+health=$(timeout 20 openssl s_client -quiet -connect "$API_HOST:443" \
+  -servername "$API_HOST" -verify_return_error -verify_ip "$API_HOST" 2>/dev/null <<EOF
+GET /health HTTP/1.1
+Host: $API_HOST
+Connection: close
+
+EOF
+)
+[[ $health == *'"status":"UP"'* ]] || { echo 'https_health_check_failed' >&2; exit 1; }
 echo "NetPay healthy at image $APP_IMAGE_TAG"

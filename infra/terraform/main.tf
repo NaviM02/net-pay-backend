@@ -148,6 +148,7 @@ resource "aws_instance" "backend" {
     http_tokens                 = "required"
     http_put_response_hop_limit = 1
   }
+  user_data_replace_on_change = true
   root_block_device {
     volume_type           = "gp3"
     volume_size           = var.root_volume_gb
