@@ -60,13 +60,17 @@ jobs:
           FRONTEND_BASE_URL: https://frontend.example.invalid
           CORS_ALLOWED_ORIGINS: https://frontend.example.invalid
         run: |
-          docker compose -f compose.prod.yml config --no-env-resolution --format json | python3 -c '
+          set -euo pipefail
+          mkdir -p "$RUNTIME_DIR"
+          touch "$RUNTIME_DIR/app.env" "$RUNTIME_DIR/db.env"
+          config=$(docker compose -f compose.prod.yml config --no-env-resolution --format json)
+          python3 -c '
           import json, sys
           config = json.load(sys.stdin)
           assert not config["services"]["db"].get("ports"), "PostgreSQL must remain private"
           assert {port["target"] for port in config["services"]["proxy"]["ports"]} == {80, 443}
           assert config["services"]["app"].get("expose") == ["8080"]
-          '
+          ' <<< "$config"
       - name: Build Docker image (not published)
         run: docker build --tag netpay:ci .
 
