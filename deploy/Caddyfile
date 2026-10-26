@@ -1,0 +1,18 @@
+{
+	email {$ACME_EMAIL}
+}
+
+{$API_HOST} {
+	tls {
+		issuer acme {
+			profile shortlived
+		}
+	}
+	encode gzip
+	header {
+		Strict-Transport-Security "max-age=31536000; includeSubDomains"
+		X-Content-Type-Options nosniff
+		-Server
+	}
+	reverse_proxy app:8080
+}

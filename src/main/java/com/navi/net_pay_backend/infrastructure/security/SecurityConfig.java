@@ -51,6 +51,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // Permitir acceso público al login y a la recuperación de contraseña
                         .requestMatchers(
+                                "/health",
                                 "/api/auth/login",
                                 "/api/users/forgot-password",
                                 "/api/users/reset-password",

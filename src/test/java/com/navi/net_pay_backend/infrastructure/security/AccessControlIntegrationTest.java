@@ -63,6 +63,8 @@ class AccessControlIntegrationTest {
 
     @Test
     void requiresAuthenticationAndDeniesUsersWithoutPermissionsButAllowsTheirOwnAccess() throws Exception {
+        mvc.perform(get("/health")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("UP"));
         mvc.perform(get("/api/roles")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/roles").header("Authorization", bearer())).andExpect(status().isForbidden());
         mvc.perform(get("/api/auth/access").header("Authorization", bearer()))
@@ -291,11 +293,10 @@ class AccessControlIntegrationTest {
 
     @Test
     void migratedAdministratorsKeepAllCataloguePermissionsAndTypologyColumnIsGone() {
-        Long adminId = jdbc.queryForObject("""
-                SELECT ur.user_id FROM app_user_role ur JOIN app_role r ON r.id = ur.role_id
-                WHERE r.hash_id = 'bb66bb4f-020e-44de-b604-8a3153d74861' LIMIT 1
-                """, Long.class);
-        assertEquals(new HashSet<>(access.permissions().stream().map(p -> p.authority()).toList()), access.effectivePermissions(adminId));
+        Set<String> cataloguePermissions = new HashSet<>(access.permissions().stream().map(p -> p.authority()).toList());
+        Set<String> administratorPermissions = access.role("bb66bb4f-020e-44de-b604-8a3153d74861")
+                .permissions().stream().map(p -> p.authority()).collect(java.util.stream.Collectors.toSet());
+        assertEquals(cataloguePermissions, administratorPermissions);
         assertEquals(0, jdbc.queryForObject("""
                 SELECT count(*) FROM information_schema.columns WHERE table_name = 'app_user' AND column_name = 'tp_role'
                 """, Integer.class));

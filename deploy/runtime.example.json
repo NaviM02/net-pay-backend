@@ -1,0 +1,16 @@
+{
+  "DB_PASSWORD": "",
+  "JWT_SECRET": "",
+  "FRONTEND_BASE_URL": "https://frontend.example.invalid",
+  "CORS_ALLOWED_ORIGINS": "https://frontend.example.invalid",
+  "PASSWORD_RESET_EXPIRATION_MINUTES": "30",
+  "CLOUDINARY_CLOUD_NAME": "",
+  "CLOUDINARY_API_KEY": "",
+  "CLOUDINARY_API_SECRET": "",
+  "CLOUDINARY_FOLDER": "netpay/receipts",
+  "CLOUDINARY_UPLOADS_FOLDER": "netpay/uploads",
+  "GMAIL_CLIENT_ID": "",
+  "GMAIL_CLIENT_SECRET": "",
+  "GMAIL_REFRESH_TOKEN": "",
+  "GMAIL_FROM_EMAIL": ""
+}

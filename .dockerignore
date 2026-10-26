@@ -8,6 +8,14 @@ target-root-owned/
 *.ipr
 .vscode/
 .env
+.env.*
+infra/
+.github/
+deploy/
+*.tfstate*
+*.tfvars
+*.tfplan
+**/.terraform/
 docs/
 *.md
 mvnw.cmd

@@ -1,0 +1,50 @@
+#!/bin/bash
+set -euo pipefail
+dnf install -y docker awscli-2 python3 curl
+systemctl enable --now docker
+systemctl enable --now amazon-ssm-agent || true
+compose_version=v2.39.4
+curl -fsSL "https://github.com/docker/compose/releases/download/$compose_version/docker-compose-linux-x86_64" \
+  -o /tmp/docker-compose
+echo '7af95166a730b87e172d4fc9aefea8725d3c6c7327d59149267b452114ddb7d4  /tmp/docker-compose' \
+  | sha256sum --check --status
+install -D -m 0755 /tmp/docker-compose /usr/local/lib/docker/cli-plugins/docker-compose
+rm -f /tmp/docker-compose
+install -d -m 700 /etc/netpay
+
+cat >/etc/netpay/deploy.env <<'NETPAY_ENV'
+AWS_REGION='${region}'
+ECR_REPOSITORY='${ecr_repository}'
+RUNTIME_PARAMETER='${parameter_name}'
+RUNTIME_DIR='/etc/netpay'
+API_HOST='${api_host}'
+ACME_EMAIL='${acme_email}'
+NETPAY_ENV
+chmod 600 /etc/netpay/deploy.env
+
+printf '%s' '${base64encode(compose_content)}' | base64 -d >/etc/netpay/compose.prod.yml
+printf '%s' '${base64encode(caddy_content)}' | base64 -d >/etc/netpay/Caddyfile
+printf '%s' '${base64encode(start_content)}' | base64 -d >/usr/local/bin/netpay-start
+printf '%s' '${base64encode(release_content)}' | base64 -d >/usr/local/bin/netpay-release
+printf '%s' '${base64encode(env_writer)}' | base64 -d >/usr/local/bin/netpay-write-env
+chmod 700 /usr/local/bin/netpay-start /usr/local/bin/netpay-release /usr/local/bin/netpay-write-env
+
+cat >/etc/systemd/system/netpay.service <<'UNIT'
+[Unit]
+Description=NetPay API and PostgreSQL containers
+Requires=docker.service
+After=docker.service network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/bin/netpay-start
+ExecReload=/usr/local/bin/netpay-start
+TimeoutStartSec=600
+
+[Install]
+WantedBy=multi-user.target
+UNIT
+systemctl daemon-reload
+systemctl enable netpay.service

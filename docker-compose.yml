@@ -14,9 +14,8 @@ services:
       interval: 10s
       timeout: 5s
       retries: 10
-    # Descomenta solo si necesitas conectarte a la BD desde fuera de Docker
-    # ports:
-    #   - "5432:5432"
+    ports:
+      - "5432:5432"
 
   app:
     build:
