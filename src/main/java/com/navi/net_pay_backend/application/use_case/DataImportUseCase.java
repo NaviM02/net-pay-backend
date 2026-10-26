@@ -59,6 +59,7 @@ public class DataImportUseCase {
         transaction.setPropagationBehavior(TransactionDefinition.PROPAGATION_REQUIRES_NEW);
         List<ImportResult.RowResult> results = new ArrayList<>();
         Set<String> seen = new HashSet<>();
+        Map<String, Optional<AppService>> serviceCache = new HashMap<>();
         int successful = 0;
         for (ImportRow row : rows) {
             try {
@@ -80,7 +81,7 @@ public class DataImportUseCase {
                 String hashId = transaction.execute(tx -> {
                     String saved = switch (resource) {
                         case "services" -> service(row.values());
-                        case "clients" -> client(row.values());
+                        case "clients" -> client(row.values(), serviceCache);
                         case "users" -> userPaymentHandler.user(row.values(), roleHashId);
                         case "payments" -> userPaymentHandler.payment(row.values(), dryRun);
                         default -> throw new DomainException("import_unknown_resource");
@@ -114,8 +115,10 @@ public class DataImportUseCase {
                 .tpStatus(status(row)).build()).getHashId();
     }
 
-    private String client(Map<String, String> row) {
-        AppService plan = serviceRepository.findByNameNotDeleted(required(row, "serviceName", 150))
+    private String client(Map<String, String> row, Map<String, Optional<AppService>> serviceCache) {
+        String serviceName = required(row, "serviceName", 150);
+        String serviceKey = serviceName.trim().toLowerCase(Locale.ROOT);
+        AppService plan = serviceCache.computeIfAbsent(serviceKey, ignored -> serviceRepository.findByNameNotDeleted(serviceName))
                 .orElseThrow(() -> new DomainException("import_service_not_found"));
         AppUser collector = partyResolver.collector(row);
         LocalDate since = date(row, "customerSince");
