@@ -1,6 +1,7 @@
 name: Backend CI/CD
 
 on:
+  workflow_dispatch:
   pull_request:
     branches: [develop, main]
   push:
@@ -70,7 +71,7 @@ jobs:
         run: docker build --tag netpay:ci .
 
   deploy:
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: (github.event_name == 'push' || github.event_name == 'workflow_dispatch') && github.ref == 'refs/heads/main'
     needs: verify
     runs-on: ubuntu-24.04
     permissions:
